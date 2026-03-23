@@ -7,7 +7,10 @@ A self-hosted REST API and web GUI for storing simple key-value text data. Compi
 ## Quick Start
 
 ```bash
-# Build (requires Go 1.21+, Node.js 18+, and GCC for SQLite)
+# Install prerequisites (Go, Node.js, GCC) if needed
+./scripts/install-prereqs.sh
+
+# Build
 make build
 
 # Run
@@ -86,6 +89,8 @@ The database directory and file are created automatically on first run.
 - **Go** 1.21 or later
 - **Node.js** 18+ and npm (for frontend build)
 - **GCC** (required by the SQLite driver via CGO)
+
+Run `./scripts/install-prereqs.sh` to install all prerequisites automatically. Supports Ubuntu/Debian, Fedora, RHEL/CentOS, Arch Linux, and macOS (Homebrew).
 
 ```bash
 # Full build (frontend + backend)
