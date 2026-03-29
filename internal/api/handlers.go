@@ -24,6 +24,54 @@ func NewHandler(store *db.Store) *Handler {
 	return &Handler{store: store}
 }
 
+// entryResponse is the JSON API response for an entry.
+// Value is always a JSON value: objects/arrays are embedded as-is;
+// plain strings are wrapped as {"data": "..."}.
+type entryResponse struct {
+	ID        int64           `json:"id"`
+	Category  string          `json:"category"`
+	Key       string          `json:"key"`
+	Value     json.RawMessage `json:"value"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
+}
+
+// valueToRaw converts a stored string value to its JSON representation.
+// JSON objects and arrays are embedded as-is; everything else is wrapped as {"data": "..."}.
+func valueToRaw(value string) json.RawMessage {
+	trimmed := strings.TrimSpace(value)
+	if len(trimmed) > 0 && (trimmed[0] == '{' || trimmed[0] == '[') && json.Valid([]byte(trimmed)) {
+		return json.RawMessage(trimmed)
+	}
+	b, _ := json.Marshal(map[string]string{"data": value})
+	return json.RawMessage(b)
+}
+
+// rawToStoredValue converts a JSON raw value from a request body to the string stored in DB.
+// JSON strings are unwrapped (e.g. "San Jose" → San Jose).
+// JSON objects/arrays are stored as their JSON string representation.
+func rawToStoredValue(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		return s
+	}
+	return string(raw)
+}
+
+func toEntryResponse(e *models.Entry) entryResponse {
+	return entryResponse{
+		ID:        e.ID,
+		Category:  e.Category,
+		Key:       e.Key,
+		Value:     valueToRaw(e.Value),
+		CreatedAt: e.CreatedAt,
+		UpdatedAt: e.UpdatedAt,
+	}
+}
+
 // Health returns service health status.
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, models.HealthResponse{
@@ -47,15 +95,35 @@ func (h *Handler) ListEntries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, result)
+	responses := make([]entryResponse, len(result.Entries))
+	for i, e := range result.Entries {
+		responses[i] = toEntryResponse(&e)
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"entries":     responses,
+		"total":       result.Total,
+		"page":        result.Page,
+		"per_page":    result.PerPage,
+		"total_pages": result.TotalPages,
+	})
 }
 
 // CreateEntry creates a new entry.
 func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
-	var entry models.Entry
-	if err := json.NewDecoder(r.Body).Decode(&entry); err != nil {
+	var body struct {
+		Category string          `json:"category"`
+		Key      string          `json:"key"`
+		Value    json.RawMessage `json:"value"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "Invalid JSON body", "VALIDATION_ERROR")
 		return
+	}
+
+	entry := models.Entry{
+		Category: body.Category,
+		Key:      body.Key,
+		Value:    rawToStoredValue(body.Value),
 	}
 
 	if msg := entry.Validate(); msg != "" {
@@ -73,54 +141,86 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, created)
+	writeJSON(w, http.StatusCreated, toEntryResponse(created))
 }
 
-// GetEntry returns a single entry by ID.
-func (h *Handler) GetEntry(w http.ResponseWriter, r *http.Request) {
-	id, ok := parseID(w, r)
-	if !ok {
-		return
+// resolveEntry looks up an entry by numeric ID or by key string from the URL path.
+func (h *Handler) resolveEntry(w http.ResponseWriter, r *http.Request) (*models.Entry, bool) {
+	parts := strings.Split(strings.TrimSuffix(r.URL.Path, "/"), "/")
+	seg := parts[len(parts)-1]
+	if seg == "" {
+		writeError(w, http.StatusBadRequest, "Missing entry ID or key", "VALIDATION_ERROR")
+		return nil, false
 	}
 
-	entry, err := h.store.GetEntry(id)
+	// Try numeric ID first
+	if id, err := strconv.ParseInt(seg, 10, 64); err == nil {
+		entry, err := h.store.GetEntry(id)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "Failed to get entry", "INTERNAL_ERROR")
+			return nil, false
+		}
+		if entry == nil {
+			writeError(w, http.StatusNotFound, "Entry not found", "NOT_FOUND")
+			return nil, false
+		}
+		return entry, true
+	}
+
+	// Fall back to key lookup
+	entry, err := h.store.GetEntryByKey(seg)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "Failed to get entry", "INTERNAL_ERROR")
-		return
+		return nil, false
 	}
 	if entry == nil {
 		writeError(w, http.StatusNotFound, "Entry not found", "NOT_FOUND")
-		return
+		return nil, false
 	}
-
-	writeJSON(w, http.StatusOK, entry)
+	return entry, true
 }
 
-// UpdateEntry updates an existing entry.
+// GetEntry returns a single entry by ID or key.
+func (h *Handler) GetEntry(w http.ResponseWriter, r *http.Request) {
+	entry, ok := h.resolveEntry(w, r)
+	if !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, toEntryResponse(entry))
+}
+
+// UpdateEntry updates an existing entry by ID or key.
 func (h *Handler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
-	id, ok := parseID(w, r)
+	entry, ok := h.resolveEntry(w, r)
 	if !ok {
 		return
 	}
 
-	var body map[string]interface{}
+	var body map[string]json.RawMessage
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "Invalid JSON body", "VALIDATION_ERROR")
 		return
 	}
 
 	var category, key, value *string
-	if v, ok := body["category"].(string); ok {
-		category = &v
+	if raw, exists := body["category"]; exists {
+		var s string
+		if err := json.Unmarshal(raw, &s); err == nil {
+			category = &s
+		}
 	}
-	if v, ok := body["key"].(string); ok {
-		key = &v
+	if raw, exists := body["key"]; exists {
+		var s string
+		if err := json.Unmarshal(raw, &s); err == nil {
+			key = &s
+		}
 	}
-	if v, ok := body["value"].(string); ok {
-		value = &v
+	if raw, exists := body["value"]; exists {
+		s := rawToStoredValue(raw)
+		value = &s
 	}
 
-	updated, err := h.store.UpdateEntry(id, category, key, value)
+	updated, err := h.store.UpdateEntry(entry.ID, category, key, value)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint") {
 			writeError(w, http.StatusConflict, "An entry with that category and key already exists", "CONFLICT")
@@ -134,17 +234,17 @@ func (h *Handler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, updated)
+	writeJSON(w, http.StatusOK, toEntryResponse(updated))
 }
 
-// DeleteEntry deletes an entry by ID.
+// DeleteEntry deletes an entry by ID or key.
 func (h *Handler) DeleteEntry(w http.ResponseWriter, r *http.Request) {
-	id, ok := parseID(w, r)
+	entry, ok := h.resolveEntry(w, r)
 	if !ok {
 		return
 	}
 
-	deleted, err := h.store.DeleteEntry(id)
+	deleted, err := h.store.DeleteEntry(entry.ID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "Failed to delete entry", "INTERNAL_ERROR")
 		return
@@ -244,20 +344,4 @@ func queryInt(r *http.Request, key string, defaultVal int) int {
 		return defaultVal
 	}
 	return n
-}
-
-func parseID(w http.ResponseWriter, r *http.Request) (int64, bool) {
-	// Extract ID from URL path: /api/entries/{id}
-	parts := strings.Split(strings.TrimSuffix(r.URL.Path, "/"), "/")
-	if len(parts) < 1 {
-		writeError(w, http.StatusBadRequest, "Invalid entry ID", "VALIDATION_ERROR")
-		return 0, false
-	}
-	idStr := parts[len(parts)-1]
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid entry ID", "VALIDATION_ERROR")
-		return 0, false
-	}
-	return id, true
 }

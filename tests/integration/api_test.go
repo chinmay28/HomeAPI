@@ -13,6 +13,24 @@ import (
 	"github.com/chinmay28/homeapi/internal/models"
 )
 
+// apiEntry decodes an entry response where Value is a JSON value.
+type apiEntry struct {
+	ID    int64           `json:"id"`
+	Key   string          `json:"key"`
+	Value json.RawMessage `json:"value"`
+}
+
+// entryValue extracts the plain string from {"data":"..."} or returns the raw JSON.
+func entryValue(raw json.RawMessage) string {
+	var wrapped map[string]string
+	if err := json.Unmarshal(raw, &wrapped); err == nil {
+		if v, ok := wrapped["data"]; ok {
+			return v
+		}
+	}
+	return string(raw)
+}
+
 func newTestServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	store, err := db.NewInMemory()
@@ -100,12 +118,12 @@ func TestCRUDWorkflow(t *testing.T) {
 	if resp.StatusCode != 200 {
 		t.Fatalf("update status = %d, want 200", resp.StatusCode)
 	}
-	var updated models.Entry
+	var updated apiEntry
 	json.NewDecoder(resp.Body).Decode(&updated)
 	resp.Body.Close()
 
-	if updated.Value != "Apple Inc. - Buy" {
-		t.Errorf("value = %q, want %q", updated.Value, "Apple Inc. - Buy")
+	if got := entryValue(updated.Value); got != "Apple Inc. - Buy" {
+		t.Errorf("value = %q, want %q", got, "Apple Inc. - Buy")
 	}
 
 	// 4. List entries

@@ -116,6 +116,21 @@ func (s *Store) CreateEntry(e *models.Entry) (*models.Entry, error) {
 	return e, nil
 }
 
+// GetEntryByKey retrieves an entry by key (globally unique lookup).
+func (s *Store) GetEntryByKey(key string) (*models.Entry, error) {
+	var e models.Entry
+	err := s.db.QueryRow(
+		"SELECT id, category, key, value, created_at, updated_at FROM entries WHERE key = ?", key,
+	).Scan(&e.ID, &e.Category, &e.Key, &e.Value, &e.CreatedAt, &e.UpdatedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("querying entry by key: %w", err)
+	}
+	return &e, nil
+}
+
 // GetEntry retrieves an entry by ID.
 func (s *Store) GetEntry(id int64) (*models.Entry, error) {
 	var e models.Entry
