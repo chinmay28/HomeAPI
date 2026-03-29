@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { listEntries, createEntry, deleteEntry, listCategories } from '../api';
+import { listEntries, createEntry, deleteEntry, listCategories, displayValue } from '../api';
 import Notification from '../components/Notification';
 
 function Entries() {
@@ -135,7 +135,7 @@ function Entries() {
                   <tr key={entry.id}>
                     <td><span style={{ background: '#e0e7ff', color: '#3730a3', padding: '0.125rem 0.5rem', borderRadius: '12px', fontSize: '0.8rem' }}>{entry.category}</span></td>
                     <td><Link to={`/entries/${entry.id}`} style={{ fontWeight: '500' }}>{entry.key}</Link></td>
-                    <td style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.value}</td>
+                    <td style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayValue(entry.value)}</td>
                     <td style={{ fontSize: '0.8rem', color: '#6b7280' }}>{new Date(entry.updated_at).toLocaleString()}</td>
                     <td>
                       <button className="btn btn-danger" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }} onClick={() => handleDelete(entry.id)}>Delete</button>
