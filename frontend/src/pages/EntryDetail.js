@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEntry, updateEntry, deleteEntry } from '../api';
+import { getEntry, updateEntry, deleteEntry, displayValue } from '../api';
 import Notification from '../components/Notification';
 
 function EntryDetail() {
@@ -16,7 +16,7 @@ function EntryDetail() {
     getEntry(id)
       .then(e => {
         setEntry(e);
-        setForm({ category: e.category, key: e.key, value: e.value });
+        setForm({ category: e.category, key: e.key, value: displayValue(e.value) });
       })
       .catch(err => setNotification({ type: 'error', message: err.message }))
       .finally(() => setLoading(false));
@@ -77,7 +77,7 @@ function EntryDetail() {
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button type="submit" className="btn btn-primary">Save</button>
-              <button type="button" className="btn btn-secondary" onClick={() => { setEditing(false); setForm({ category: entry.category, key: entry.key, value: entry.value }); }}>Cancel</button>
+              <button type="button" className="btn btn-secondary" onClick={() => { setEditing(false); setForm({ category: entry.category, key: entry.key, value: displayValue(entry.value) }); }}>Cancel</button>
             </div>
           </form>
         ) : (
@@ -96,7 +96,7 @@ function EntryDetail() {
             </div>
             <div className="form-group">
               <label>Value</label>
-              <div style={{ whiteSpace: 'pre-wrap', background: '#f9fafb', padding: '0.75rem', borderRadius: '6px' }}>{entry.value || <em style={{ color: '#9ca3af' }}>empty</em>}</div>
+              <div style={{ whiteSpace: 'pre-wrap', background: '#f9fafb', padding: '0.75rem', borderRadius: '6px' }}>{displayValue(entry.value) || <em style={{ color: '#9ca3af' }}>empty</em>}</div>
             </div>
             <div className="form-group">
               <label>Created</label>

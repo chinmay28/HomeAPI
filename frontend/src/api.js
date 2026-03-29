@@ -1,5 +1,18 @@
 const BASE = '/api';
 
+// Extract a human-readable string from an API entry value.
+// The API always returns value as JSON:
+//   {"data": "San Jose"}  → plain-text values are wrapped in a data envelope
+//   {"lat": 37.3, ...}    → JSON objects/arrays are embedded directly
+export function displayValue(v) {
+  if (v === null || v === undefined) return '';
+  if (typeof v !== 'object') return String(v);
+  if (!Array.isArray(v) && Object.prototype.hasOwnProperty.call(v, 'data') && Object.keys(v).length === 1) {
+    return String(v.data);
+  }
+  return JSON.stringify(v);
+}
+
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
