@@ -13,6 +13,33 @@ import (
 	"github.com/chinmay28/homeapi/internal/models"
 )
 
+// apiEntry decodes an entry response where Value is a JSON value.
+type apiEntry struct {
+	ID    int64           `json:"id"`
+	Key   string          `json:"key"`
+	Value json.RawMessage `json:"value"`
+}
+
+// apiList decodes a paginated list response.
+type apiList struct {
+	Entries    []apiEntry `json:"entries"`
+	Total      int        `json:"total"`
+	Page       int        `json:"page"`
+	PerPage    int        `json:"per_page"`
+	TotalPages int        `json:"total_pages"`
+}
+
+// entryValue extracts the plain string from {"data":"..."} or returns the raw JSON.
+func entryValue(raw json.RawMessage) string {
+	var wrapped map[string]string
+	if err := json.Unmarshal(raw, &wrapped); err == nil {
+		if v, ok := wrapped["data"]; ok {
+			return v
+		}
+	}
+	return string(raw)
+}
+
 func startServer(t *testing.T) (*httptest.Server, *http.Client) {
 	t.Helper()
 	store, err := db.NewInMemory()
@@ -113,11 +140,11 @@ func TestFullWorkflow(t *testing.T) {
 	req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/api/entries/%d", ts.URL, stockIDs[0]), bytes.NewReader(updateBody))
 	req.Header.Set("Content-Type", "application/json")
 	resp, _ = client.Do(req)
-	var updatedEntry models.Entry
+	var updatedEntry apiEntry
 	json.NewDecoder(resp.Body).Decode(&updatedEntry)
 	resp.Body.Close()
-	if updatedEntry.Value != "Apple Inc. - Strong Buy" {
-		t.Errorf("updated value = %q", updatedEntry.Value)
+	if got := entryValue(updatedEntry.Value); got != "Apple Inc. - Strong Buy" {
+		t.Errorf("updated value = %q", got)
 	}
 
 	// Step 7: Export all data
@@ -205,15 +232,15 @@ func TestImportReplace(t *testing.T) {
 
 	// Verify temp was overwritten
 	resp, _ = client.Get(ts.URL + "/api/entries?search=temp")
-	var entries models.PaginatedEntries
+	var entries apiList
 	json.NewDecoder(resp.Body).Decode(&entries)
 	resp.Body.Close()
 
 	if len(entries.Entries) != 1 {
 		t.Fatalf("expected 1 entry, got %d", len(entries.Entries))
 	}
-	if entries.Entries[0].Value != "68" {
-		t.Errorf("value = %q, want %q", entries.Entries[0].Value, "68")
+	if got := entryValue(entries.Entries[0].Value); got != "68" {
+		t.Errorf("value = %q, want %q", got, "68")
 	}
 }
 
@@ -246,15 +273,15 @@ func TestScriptLikeUsage(t *testing.T) {
 	})
 
 	resp, _ := client.Get(ts.URL + "/api/entries?category=config&search=alert_threshold")
-	var result models.PaginatedEntries
+	var result apiList
 	json.NewDecoder(resp.Body).Decode(&result)
 	resp.Body.Close()
 
 	if len(result.Entries) != 1 {
 		t.Fatalf("expected 1 config entry, got %d", len(result.Entries))
 	}
-	if result.Entries[0].Value != "10" {
-		t.Errorf("config value = %q, want %q", result.Entries[0].Value, "10")
+	if got := entryValue(result.Entries[0].Value); got != "10" {
+		t.Errorf("config value = %q, want %q", got, "10")
 	}
 
 	// Export for backup
