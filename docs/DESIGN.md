@@ -18,7 +18,6 @@ HomeAPI is a lightweight, self-hosted application for storing and retrieving sim
 ### 1.2 Non-Goals
 - Multi-user authentication (single-user system)
 - Real-time collaboration
-- Complex data types (only text key-value pairs)
 - Distributed storage
 
 ## 2. Architecture
@@ -78,24 +77,52 @@ CREATE INDEX idx_entries_category ON entries(category);
 CREATE INDEX idx_entries_key ON entries(key);
 ```
 
-### 3.2 Entry Model
+Values are always stored as plain text strings in SQLite, regardless of whether
+they represent JSON or plain strings. The API layer handles presentation.
+
+### 3.2 Entry Model (internal)
 
 ```go
 type Entry struct {
     ID        int64     `json:"id"`
     Category  string    `json:"category"`
     Key       string    `json:"key"`
-    Value     string    `json:"value"`
+    Value     string    `json:"value"`   // plain text as stored in DB
     CreatedAt time.Time `json:"created_at"`
     UpdatedAt time.Time `json:"updated_at"`
 }
 ```
 
-### 3.3 Constraints
-- `category + key` must be unique (upsert semantics available)
+### 3.3 Entry Response (API)
+
+The API response uses `entryResponse` (in `internal/api/handlers.go`), which
+renders the `value` field as a JSON value rather than a raw string:
+
+```json
+{
+  "id": 1,
+  "category": "default",
+  "key": "city",
+  "value": {"data": "San Jose"},
+  "created_at": "...",
+  "updated_at": "..."
+}
+```
+
+If the stored value is a valid JSON object or array it is embedded as-is:
+```json
+{
+  "key": "location",
+  "value": {"lat": 37.3, "lon": -121.9}
+}
+```
+
+### 3.4 Constraints
+- `category + key` must be unique (upsert semantics available via import)
 - `category` defaults to "default" if not specified
 - `key` is required and cannot be empty
 - `value` can be empty string
+- Keys are treated as globally unique identifiers for lookup purposes
 
 ## 4. API Design
 
@@ -120,30 +147,37 @@ Content-Type: application/json
 
 {"category": "watchlist", "key": "AAPL", "value": "Apple Inc."}
 ```
+- `value` accepts any JSON type: a JSON string is unwrapped for storage;
+  a JSON object or array is stored as its JSON string representation.
 - Returns 201 Created with the created entry
 - Returns 409 Conflict if category+key already exists
 
 #### Get Entry
 ```
-GET /api/entries/42
+GET /api/entries/42          # by numeric ID
+GET /api/entries/city        # by key (non-numeric path segment)
 ```
 - Returns 200 with the entry
 - Returns 404 if not found
+- Numeric path segments are resolved as IDs; all others as keys
 
 #### Update Entry
 ```
 PUT /api/entries/42
+PUT /api/entries/city
 Content-Type: application/json
 
-{"value": "Apple Inc. - Updated"}
+{"value": "San Francisco"}
 ```
 - Partial updates allowed (only specified fields are changed)
+- `value` accepts any JSON type (same rules as Create)
 - Returns 200 with the updated entry
 - `updated_at` is automatically set
 
 #### Delete Entry
 ```
 DELETE /api/entries/42
+DELETE /api/entries/city
 ```
 - Returns 204 No Content on success
 - Returns 404 if not found
@@ -162,6 +196,7 @@ GET /api/export
 - Returns all entries as a JSON array
 - Content-Disposition header set for file download
 - Filename: `homeapi-export-YYYY-MM-DD.json`
+- Values in the export are the raw stored strings (not JSON-wrapped)
 
 #### Import Data
 ```
@@ -179,7 +214,26 @@ GET /api/health
 ```
 - Returns 200 with `{"status": "ok", "version": "1.0.0"}`
 
-### 4.2 Error Responses
+### 4.2 Value Field Encoding
+
+The `value` field is always a JSON value in API responses:
+
+| Stored text | API response `value` |
+|---|---|
+| `San Jose` | `{"data": "San Jose"}` |
+| `72` | `{"data": "72"}` |
+| `{"lat": 37.3, "lon": -121.9}` | `{"lat": 37.3, "lon": -121.9}` |
+| `["a", "b"]` | `["a", "b"]` |
+
+On input, the rules are symmetric:
+
+| Request `value` | Stored text |
+|---|---|
+| `"San Jose"` (JSON string) | `San Jose` |
+| `{"lat": 37.3}` (JSON object) | `{"lat": 37.3}` |
+| `["a","b"]` (JSON array) | `["a","b"]` |
+
+### 4.3 Error Responses
 
 All errors follow a consistent format:
 ```json
@@ -191,7 +245,7 @@ All errors follow a consistent format:
 
 Error codes: `NOT_FOUND`, `VALIDATION_ERROR`, `CONFLICT`, `INTERNAL_ERROR`
 
-### 4.3 CORS
+### 4.4 CORS
 CORS is enabled for all origins in development. In production, the frontend is served from the same origin so CORS is not needed.
 
 ## 5. Frontend Design
@@ -267,3 +321,25 @@ Database is created automatically on first run.
 - Input validation on all API inputs
 - CORS restricted in production mode
 - No sensitive data stored (text key-value pairs only)
+
+## 9. Backward Compatibility
+
+Backward compatibility with existing data and clients is a hard requirement.
+
+### 9.1 Database
+- Schema changes must be **additive only** (new columns with defaults, new indexes).
+- Existing rows must never be transformed or migrated automatically.
+- The `migrate()` function uses `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`
+  and must remain safe to run against any existing database version.
+
+### 9.2 API
+- Existing response fields must not be removed or renamed.
+- Numeric ID lookups (`/api/entries/1`) must continue to work forever.
+- The export/import JSON format (field names, nesting) must remain stable.
+  If a breaking format change is ever needed, increment `version` and support
+  reading old versions.
+
+### 9.3 Value encoding
+- The `{"data": "..."}` wrapper for plain-text values is part of the public API
+  contract. Scripts that parse `response.value.data` must not break.
+- JSON object/array values embedded directly are also part of the contract.
