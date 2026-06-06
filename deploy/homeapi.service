@@ -1,0 +1,33 @@
+[Unit]
+# Reference systemd unit for HomeAPI.
+#
+# This file is provided for reference and manual setups. The recommended
+# way to install/upgrade is the one-line QuickStart, which generates an
+# equivalent unit automatically:
+#
+#   curl -fsSL https://raw.githubusercontent.com/chinmay28/homeapi/main/scripts/quickstart.sh | sudo bash
+#
+Description=HomeAPI - self-hosted key-value REST API
+Documentation=https://github.com/chinmay28/homeapi
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=homeapi
+Group=homeapi
+Environment=HOMEAPI_PORT=8080
+Environment=HOMEAPI_DB_PATH=/var/lib/homeapi/homeapi.db
+ExecStart=/opt/homeapi/homeapi
+Restart=on-failure
+RestartSec=2
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/homeapi
+
+[Install]
+WantedBy=multi-user.target
