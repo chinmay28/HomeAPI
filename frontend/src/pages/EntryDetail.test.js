@@ -43,11 +43,13 @@ test('displays plain-text value from {data} envelope — does not show [object O
   expect(screen.queryByText('[object Object]')).not.toBeInTheDocument();
 });
 
-test('displays JSON object value as JSON string', async () => {
+test('pretty-prints JSON object value across multiple lines', async () => {
   api.getEntry.mockResolvedValue(makeEntry({ key: 'loc', value: { lat: 37.3, lon: -121.9 } }));
   renderDetail();
 
-  expect(await screen.findByText('{"lat":37.3,"lon":-121.9}')).toBeInTheDocument();
+  // Value is rendered pretty-printed; findByText normalizes whitespace, so the
+  // multi-line JSON collapses to a single spaced string.
+  expect(await screen.findByText('{ "lat": 37.3, "lon": -121.9 }')).toBeInTheDocument();
   expect(screen.queryByText('[object Object]')).not.toBeInTheDocument();
 });
 
@@ -73,10 +75,11 @@ test('edit form textarea shows plain string, not [object Object]', async () => {
 });
 
 test('edit form textarea shows JSON string for object values', async () => {
-  api.getEntry.mockResolvedValue(makeEntry({ value: { lat: 37.3 } }));
+  api.getEntry.mockResolvedValue(makeEntry({ key: 'loc', value: { lat: 37.3 } }));
   renderDetail();
 
-  await screen.findByText('{"lat":37.3}');
+  // Wait for load via the key, then edit — the textarea keeps JSON compact.
+  await screen.findByText('loc');
   fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
 
   const textarea = screen.getByDisplayValue('{"lat":37.3}');

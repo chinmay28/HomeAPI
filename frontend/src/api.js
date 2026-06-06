@@ -13,6 +13,23 @@ export function displayValue(v) {
   return JSON.stringify(v);
 }
 
+// True when the value is a structured JSON object/array (i.e. not a plain-text
+// {data} envelope or a scalar). Used to decide whether to pretty-print.
+export function isStructuredValue(v) {
+  if (v === null || typeof v !== 'object') return false;
+  if (!Array.isArray(v) && Object.prototype.hasOwnProperty.call(v, 'data') && Object.keys(v).length === 1) {
+    return false;
+  }
+  return true;
+}
+
+// Like displayValue, but pretty-prints structured JSON across multiple lines.
+// Plain-text and scalar values are returned unchanged.
+export function prettyValue(v) {
+  if (isStructuredValue(v)) return JSON.stringify(v, null, 2);
+  return displayValue(v);
+}
+
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
