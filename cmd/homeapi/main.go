@@ -24,7 +24,7 @@ func main() {
 				port = os.Getenv("HOMEAPI_PORT")
 			}
 			if port == "" {
-				port = "8080"
+				port = "9999"
 			}
 
 			dbPath := os.Getenv("HOMEAPI_DB_PATH")

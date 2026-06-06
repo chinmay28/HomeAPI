@@ -14,8 +14,8 @@ info()  { echo -e "${GREEN}[INFO]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $*"; }
 error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 
-GO_MIN_VERSION="1.21"
-NODE_MIN_VERSION="18"
+GO_MIN_VERSION="1.26"
+NODE_MIN_VERSION="24"
 
 # --- Version checking helpers ---
 
@@ -112,11 +112,11 @@ install_debian() {
     if ! check_node; then
         info "Installing Node.js via NodeSource..."
         if command -v curl &>/dev/null; then
-            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
             sudo apt-get install -y -qq nodejs
         else
             sudo apt-get install -y -qq curl
-            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
             sudo apt-get install -y -qq nodejs
         fi
     fi
@@ -151,11 +151,11 @@ install_rhel() {
     if ! check_node; then
         info "Installing Node.js..."
         if command -v curl &>/dev/null; then
-            curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+            curl -fsSL https://rpm.nodesource.com/setup_24.x | sudo bash -
             sudo yum install -y nodejs
         else
             sudo yum install -y curl
-            curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+            curl -fsSL https://rpm.nodesource.com/setup_24.x | sudo bash -
             sudo yum install -y nodejs
         fi
     fi
@@ -209,7 +209,7 @@ install_go_binary() {
     esac
     local os
     os=$(uname -s | tr '[:upper:]' '[:lower:]')
-    local version="1.22.5"
+    local version="1.26.4"
     local url="https://go.dev/dl/go${version}.${os}-${arch}.tar.gz"
 
     info "Downloading Go $version from $url ..."
@@ -232,7 +232,7 @@ install_node_binary() {
         aarch64|arm64) arch="arm64" ;;
         *) error "Unsupported architecture: $(uname -m)" ;;
     esac
-    local version="20.18.0"
+    local version="24.16.0"
     local url="https://nodejs.org/dist/v${version}/node-v${version}-linux-${arch}.tar.xz"
 
     info "Downloading Node.js $version from $url ..."

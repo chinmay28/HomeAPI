@@ -25,7 +25,7 @@ make build
 ### Running
 
 ```bash
-# Start with defaults (port 8080, database in ~/.homeapi/)
+# Start with defaults (port 9999, database in ~/.homeapi/)
 ./homeapi
 
 # Custom port
@@ -35,7 +35,7 @@ HOMEAPI_PORT=3000 ./homeapi
 HOMEAPI_DB_PATH=/data/mydata.db ./homeapi
 ```
 
-Open your browser to `http://localhost:8080` to access the web interface.
+Open your browser to `http://localhost:9999` to access the web interface.
 
 ## Using the Web Interface
 
@@ -72,25 +72,25 @@ The REST API is available at `/api/` and is designed for easy use with `curl` an
 ### List All Entries
 
 ```bash
-curl http://localhost:8080/api/entries
+curl http://localhost:9999/api/entries
 ```
 
 ### Filter by Category
 
 ```bash
-curl "http://localhost:8080/api/entries?category=watchlist"
+curl "http://localhost:9999/api/entries?category=watchlist"
 ```
 
 ### Search Entries
 
 ```bash
-curl "http://localhost:8080/api/entries?search=apple"
+curl "http://localhost:9999/api/entries?search=apple"
 ```
 
 ### Create an Entry
 
 ```bash
-curl -X POST http://localhost:8080/api/entries \
+curl -X POST http://localhost:9999/api/entries \
   -H "Content-Type: application/json" \
   -d '{"category": "watchlist", "key": "AAPL", "value": "Apple Inc."}'
 ```
@@ -101,23 +101,23 @@ You can look up entries by numeric ID **or by key**:
 
 ```bash
 # By numeric ID
-curl http://localhost:8080/api/entries/1
+curl http://localhost:9999/api/entries/1
 
 # By key — much easier to remember and script
-curl http://localhost:8080/api/entries/AAPL
-curl http://localhost:8080/api/entries/thermostat_temp
+curl http://localhost:9999/api/entries/AAPL
+curl http://localhost:9999/api/entries/thermostat_temp
 ```
 
 ### Update an Entry
 
 ```bash
 # By numeric ID
-curl -X PUT http://localhost:8080/api/entries/1 \
+curl -X PUT http://localhost:9999/api/entries/1 \
   -H "Content-Type: application/json" \
   -d '{"value": "Apple Inc. - Buy"}'
 
 # By key
-curl -X PUT http://localhost:8080/api/entries/AAPL \
+curl -X PUT http://localhost:9999/api/entries/AAPL \
   -H "Content-Type: application/json" \
   -d '{"value": "Apple Inc. - Buy"}'
 ```
@@ -126,22 +126,22 @@ curl -X PUT http://localhost:8080/api/entries/AAPL \
 
 ```bash
 # By numeric ID
-curl -X DELETE http://localhost:8080/api/entries/1
+curl -X DELETE http://localhost:9999/api/entries/1
 
 # By key
-curl -X DELETE http://localhost:8080/api/entries/AAPL
+curl -X DELETE http://localhost:9999/api/entries/AAPL
 ```
 
 ### Get All Categories
 
 ```bash
-curl http://localhost:8080/api/categories
+curl http://localhost:9999/api/categories
 ```
 
 ### Health Check
 
 ```bash
-curl http://localhost:8080/api/health
+curl http://localhost:9999/api/health
 ```
 
 ## Working with JSON Values
@@ -154,7 +154,7 @@ When you store a plain string, the API wraps it in a `{"data": "..."}` envelope
 so that the `value` field is always valid JSON:
 
 ```bash
-$ curl -X POST http://localhost:8080/api/entries \
+$ curl -X POST http://localhost:9999/api/entries \
     -d '{"key": "city", "value": "San Jose"}'
 
 # Response:
@@ -168,7 +168,7 @@ $ curl -X POST http://localhost:8080/api/entries \
 
 To read it back in a script:
 ```bash
-curl -s http://localhost:8080/api/entries/city | jq '.value.data'
+curl -s http://localhost:9999/api/entries/city | jq '.value.data'
 # → "San Jose"
 ```
 
@@ -178,7 +178,7 @@ When you store a JSON object or array, it is embedded directly in the response
 without any wrapping:
 
 ```bash
-$ curl -X POST http://localhost:8080/api/entries \
+$ curl -X POST http://localhost:9999/api/entries \
     -d '{"key": "location", "value": {"lat": 37.3, "lon": -121.9}}'
 
 # Response:
@@ -191,13 +191,13 @@ $ curl -X POST http://localhost:8080/api/entries \
 
 Reading structured data:
 ```bash
-LAT=$(curl -s http://localhost:8080/api/entries/location | jq '.value.lat')
+LAT=$(curl -s http://localhost:9999/api/entries/location | jq '.value.lat')
 ```
 
 ### Updating to a JSON Value
 
 ```bash
-curl -X PUT http://localhost:8080/api/entries/location \
+curl -X PUT http://localhost:9999/api/entries/location \
   -H "Content-Type: application/json" \
   -d '{"value": {"lat": 37.77, "lon": -122.41}}'
 ```
@@ -213,10 +213,10 @@ curl -X PUT http://localhost:8080/api/entries/location \
 
 ```bash
 # Save to file
-curl http://localhost:8080/api/export -o homeapi-backup.json
+curl http://localhost:9999/api/export -o homeapi-backup.json
 
 # Pretty print
-curl http://localhost:8080/api/export | jq .
+curl http://localhost:9999/api/export | jq .
 ```
 
 ### Import via GUI
@@ -231,12 +231,12 @@ curl http://localhost:8080/api/export | jq .
 
 ```bash
 # Merge mode (default) - skip existing entries
-curl -X POST http://localhost:8080/api/import \
+curl -X POST http://localhost:9999/api/import \
   -H "Content-Type: application/json" \
   -d @homeapi-backup.json
 
 # Replace mode - overwrite existing entries
-curl -X POST http://localhost:8080/api/import \
+curl -X POST http://localhost:9999/api/import \
   -H "Content-Type: application/json" \
   -d '{"entries": [...], "mode": "replace"}'
 ```
@@ -271,7 +271,7 @@ HomeAPI is configured via environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HOMEAPI_PORT` | `8080` | HTTP server port |
+| `HOMEAPI_PORT` | `9999` | HTTP server port |
 | `HOMEAPI_DB_PATH` | `~/.homeapi/homeapi.db` | Path to SQLite database file |
 | `HOMEAPI_LOG_LEVEL` | `info` | Logging level: debug, info, warn, error |
 
@@ -285,28 +285,28 @@ The database file and its directory are created automatically on first run.
 #!/bin/bash
 # Add stocks to watchlist
 for ticker in AAPL GOOGL MSFT AMZN; do
-  curl -s -X POST http://localhost:8080/api/entries \
+  curl -s -X POST http://localhost:9999/api/entries \
     -H "Content-Type: application/json" \
     -d "{\"category\": \"watchlist\", \"key\": \"$ticker\", \"value\": \"active\"}"
 done
 
 # List watchlist keys
-curl -s "http://localhost:8080/api/entries?category=watchlist" | jq '.entries[].key'
+curl -s "http://localhost:9999/api/entries?category=watchlist" | jq '.entries[].key'
 
 # Look up a specific stock by key
-curl -s http://localhost:8080/api/entries/AAPL | jq '.value.data'
+curl -s http://localhost:9999/api/entries/AAPL | jq '.value.data'
 ```
 
 ### Home Automation Config
 
 ```bash
 # Set thermostat temperature
-curl -s -X POST http://localhost:8080/api/entries \
+curl -s -X POST http://localhost:9999/api/entries \
   -H "Content-Type: application/json" \
   -d '{"category": "config", "key": "thermostat_temp", "value": "72"}'
 
 # Read it back by key — no ID lookup needed
-TEMP=$(curl -s http://localhost:8080/api/entries/thermostat_temp | jq -r '.value.data')
+TEMP=$(curl -s http://localhost:9999/api/entries/thermostat_temp | jq -r '.value.data')
 echo "Setting thermostat to $TEMP"
 ```
 
@@ -314,12 +314,12 @@ echo "Setting thermostat to $TEMP"
 
 ```bash
 # Store a JSON config object
-curl -s -X POST http://localhost:8080/api/entries \
+curl -s -X POST http://localhost:9999/api/entries \
   -H "Content-Type: application/json" \
   -d '{"category": "config", "key": "mqtt", "value": {"host": "192.168.1.10", "port": 1883}}'
 
 # Read it back
-curl -s http://localhost:8080/api/entries/mqtt | jq '.value.host'
+curl -s http://localhost:9999/api/entries/mqtt | jq '.value.host'
 # → "192.168.1.10"
 ```
 
@@ -327,5 +327,5 @@ curl -s http://localhost:8080/api/entries/mqtt | jq '.value.host'
 
 ```bash
 # Add to crontab: daily backup at midnight
-0 0 * * * curl -s http://localhost:8080/api/export > /backups/homeapi-$(date +\%Y\%m\%d).json
+0 0 * * * curl -s http://localhost:9999/api/export > /backups/homeapi-$(date +\%Y\%m\%d).json
 ```

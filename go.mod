@@ -1,6 +1,6 @@
 module github.com/chinmay28/homeapi
 
-go 1.24.7
+go 1.26.4
 
 require github.com/mattn/go-sqlite3 v1.14.37
 
