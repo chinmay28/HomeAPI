@@ -285,14 +285,14 @@ The Makefile orchestrates this into a single `make build` command.
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
-| `HOMEAPI_PORT` | `8080` | HTTP listen port |
+| `HOMEAPI_PORT` | `9999` | HTTP listen port |
 | `HOMEAPI_DB_PATH` | `~/.homeapi/homeapi.db` | Database file path |
 | `HOMEAPI_LOG_LEVEL` | `info` | Log level (debug, info, warn, error) |
 
 ### 6.3 Deployment
 1. Copy binary to target machine
 2. Run: `./homeapi`
-3. Access: `http://localhost:8080`
+3. Access: `http://localhost:9999`
 
 Database is created automatically on first run.
 

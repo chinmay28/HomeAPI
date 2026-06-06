@@ -17,7 +17,7 @@ set -euo pipefail
 # Configurable via environment variables (all optional):
 #
 #   HOMEAPI_REF       Git branch/tag/commit to deploy        (default: main)
-#   HOMEAPI_PORT      HTTP listen port                       (default: 8080)
+#   HOMEAPI_PORT      HTTP listen port                       (default: 9999)
 #   HOMEAPI_USER      System user the service runs as        (default: homeapi)
 #   HOMEAPI_PREFIX    Install dir for source + binary        (default: /opt/homeapi)
 #   HOMEAPI_DATA_DIR  Persistent data dir (DB + backups)     (default: /var/lib/homeapi)
@@ -25,7 +25,7 @@ set -euo pipefail
 
 REPO="${HOMEAPI_REPO:-https://github.com/chinmay28/homeapi.git}"
 REF="${HOMEAPI_REF:-main}"
-PORT="${HOMEAPI_PORT:-8080}"
+PORT="${HOMEAPI_PORT:-9999}"
 SVC_USER="${HOMEAPI_USER:-homeapi}"
 PREFIX="${HOMEAPI_PREFIX:-/opt/homeapi}"
 DATA_DIR="${HOMEAPI_DATA_DIR:-/var/lib/homeapi}"
