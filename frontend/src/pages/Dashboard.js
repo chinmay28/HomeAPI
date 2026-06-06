@@ -25,7 +25,7 @@ function Dashboard() {
     <div>
       <h1 className="page-title">Dashboard</h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div className="stat-grid">
         <div className="card">
           <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Total Entries</div>
           <div style={{ fontSize: '2rem', fontWeight: '700' }}>{totalEntries}</div>
@@ -53,7 +53,8 @@ function Dashboard() {
             </Link>
           </div>
         ) : (
-          <table>
+          <div className="table-wrap">
+          <table className="responsive-table">
             <thead>
               <tr>
                 <th>Category</th>
@@ -64,9 +65,9 @@ function Dashboard() {
             <tbody>
               {categories.map(cat => (
                 <tr key={cat.name}>
-                  <td style={{ fontWeight: '500' }}>{cat.name}</td>
-                  <td>{cat.count}</td>
-                  <td>
+                  <td data-label="Category" style={{ fontWeight: '500' }}>{cat.name}</td>
+                  <td data-label="Entries">{cat.count}</td>
+                  <td className="cell-actions">
                     <Link to={`/entries?category=${encodeURIComponent(cat.name)}`} className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>
                       View
                     </Link>
@@ -75,6 +76,7 @@ function Dashboard() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

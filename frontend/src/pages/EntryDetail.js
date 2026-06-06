@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEntry, updateEntry, deleteEntry, displayValue } from '../api';
+import { getEntry, updateEntry, deleteEntry, displayValue, prettyValue, isStructuredValue } from '../api';
 import Notification from '../components/Notification';
 
 function EntryDetail() {
@@ -51,9 +51,9 @@ function EntryDetail() {
     <div>
       <Notification notification={notification} onClear={() => setNotification(null)} />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div className="toolbar">
         <h1 className="page-title" style={{ marginBottom: 0 }}>Entry Detail</h1>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className="toolbar-actions">
           <button className="btn btn-secondary" onClick={() => navigate('/entries')}>Back</button>
           {!editing && <button className="btn btn-primary" onClick={() => setEditing(true)}>Edit</button>}
           <button className="btn btn-danger" onClick={handleDelete}>Delete</button>
@@ -88,15 +88,15 @@ function EntryDetail() {
             </div>
             <div className="form-group">
               <label>Category</label>
-              <div><span style={{ background: '#e0e7ff', color: '#3730a3', padding: '0.125rem 0.5rem', borderRadius: '12px', fontSize: '0.875rem' }}>{entry.category}</span></div>
+              <div><span className="badge">{entry.category}</span></div>
             </div>
             <div className="form-group">
               <label>Key</label>
               <div style={{ fontWeight: '500' }}>{entry.key}</div>
             </div>
             <div className="form-group">
-              <label>Value</label>
-              <div style={{ whiteSpace: 'pre-wrap', background: '#f9fafb', padding: '0.75rem', borderRadius: '6px' }}>{displayValue(entry.value) || <em style={{ color: '#9ca3af' }}>empty</em>}</div>
+              <label>Value{isStructuredValue(entry.value) && <span className="value-badge">JSON</span>}</label>
+              <pre className={`value-display${isStructuredValue(entry.value) ? ' value-json' : ''}`}>{prettyValue(entry.value) || <em style={{ color: '#9ca3af' }}>empty</em>}</pre>
             </div>
             <div className="form-group">
               <label>Created</label>

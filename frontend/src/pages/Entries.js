@@ -69,7 +69,7 @@ function Entries() {
     <div>
       <Notification notification={notification} onClear={() => setNotification(null)} />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div className="toolbar">
         <h1 className="page-title" style={{ marginBottom: 0 }}>Entries</h1>
         <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
           {showForm ? 'Cancel' : 'New Entry'}
@@ -79,7 +79,7 @@ function Entries() {
       {showForm && (
         <div className="card">
           <form onSubmit={handleCreate}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: '1rem', alignItems: 'end' }}>
+            <div className="entry-form-grid">
               <div className="form-group">
                 <label>Category</label>
                 <input value={form.category} onChange={e => setForm({...form, category: e.target.value})} placeholder="default" />
@@ -98,8 +98,8 @@ function Entries() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-        <select value={category} onChange={e => setFilter('category', e.target.value)} style={{ width: 'auto', minWidth: '150px' }}>
+      <div className="filters">
+        <select value={category} onChange={e => setFilter('category', e.target.value)}>
           <option value="">All Categories</option>
           {categories.map(c => (
             <option key={c.name} value={c.name}>{c.name} ({c.count})</option>
@@ -109,7 +109,6 @@ function Entries() {
           placeholder="Search entries..."
           value={search}
           onChange={e => setFilter('search', e.target.value)}
-          style={{ maxWidth: '300px' }}
         />
       </div>
 
@@ -120,7 +119,8 @@ function Entries() {
           <div className="empty-state">No entries found.</div>
         ) : (
           <>
-            <table>
+            <div className="table-wrap">
+            <table className="responsive-table">
               <thead>
                 <tr>
                   <th>Category</th>
@@ -133,17 +133,18 @@ function Entries() {
               <tbody>
                 {data.entries.map(entry => (
                   <tr key={entry.id}>
-                    <td><span style={{ background: '#e0e7ff', color: '#3730a3', padding: '0.125rem 0.5rem', borderRadius: '12px', fontSize: '0.8rem' }}>{entry.category}</span></td>
-                    <td><Link to={`/entries/${entry.id}`} style={{ fontWeight: '500' }}>{entry.key}</Link></td>
-                    <td style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayValue(entry.value)}</td>
-                    <td style={{ fontSize: '0.8rem', color: '#6b7280' }}>{new Date(entry.updated_at).toLocaleString()}</td>
-                    <td>
+                    <td data-label="Category"><span className="badge">{entry.category}</span></td>
+                    <td data-label="Key"><Link to={`/entries/${entry.id}`} style={{ fontWeight: '500' }}>{entry.key}</Link></td>
+                    <td data-label="Value" className="cell-value">{displayValue(entry.value)}</td>
+                    <td data-label="Updated" style={{ fontSize: '0.8rem', color: '#6b7280' }}>{new Date(entry.updated_at).toLocaleString()}</td>
+                    <td className="cell-actions">
                       <button className="btn btn-danger" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }} onClick={() => handleDelete(entry.id)}>Delete</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
             {data.total_pages > 1 && (
               <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1rem' }}>
                 {Array.from({ length: data.total_pages }, (_, i) => i + 1).map(p => (
