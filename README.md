@@ -4,7 +4,52 @@ A self-hosted REST API and web GUI for storing simple key-value text data. Compi
 
 **Use cases:** stock ticker watchlists, home automation configs, bookmarks, notes, and any simple text data that needs to be read/written by scripts or humans.
 
-## Quick Start
+## Quick Start (one line)
+
+Deploy HomeAPI as a `systemd` service with a single command. The **same**
+command installs a fresh copy or upgrades an existing one in place:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/chinmay28/homeapi/main/scripts/quickstart.sh | sudo bash
+```
+
+This installs build prerequisites, builds the binary, creates a dedicated
+`homeapi` system user, and starts the service. Open http://localhost:8080.
+
+**Upgrades are non-disruptive and lossless.** Re-running the command on an
+existing install:
+
+- keeps your data untouched — the SQLite database lives in a persistent data
+  directory (`/var/lib/homeapi`) that is never overwritten by upgrades,
+- takes a consistent database backup (to `/var/lib/homeapi/backups`) before
+  swapping anything,
+- swaps the binary atomically and **automatically rolls back** to the previous
+  version if the new one fails its health check.
+
+```bash
+# Common operations after install
+systemctl status homeapi          # service status
+journalctl -u homeapi -f          # live logs
+sudo systemctl restart homeapi    # restart
+```
+
+Override defaults with environment variables, e.g. a custom port:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/chinmay28/homeapi/main/scripts/quickstart.sh | sudo HOMEAPI_PORT=9090 bash
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HOMEAPI_REF` | `main` | Git branch/tag/commit to deploy |
+| `HOMEAPI_PORT` | `8080` | HTTP listen port |
+| `HOMEAPI_USER` | `homeapi` | System user the service runs as |
+| `HOMEAPI_PREFIX` | `/opt/homeapi` | Install dir for source + binary |
+| `HOMEAPI_DATA_DIR` | `/var/lib/homeapi` | Persistent data dir (DB + backups) |
+
+A reference unit file is available at [`deploy/homeapi.service`](deploy/homeapi.service).
+
+## Build From Source
 
 ```bash
 # Install prerequisites (Go, Node.js, GCC) if needed
