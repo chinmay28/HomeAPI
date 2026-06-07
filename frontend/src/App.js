@@ -13,7 +13,12 @@ function App() {
     <div className="app">
       <header className="header">
         <div className="header-content">
-          <Link to="/" className="logo">HomeAPI</Link>
+          <Link to="/" className="logo">
+            <svg className="logo-icon" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
+              <path d="M16 6 L26 15 L23 15 L23 25 L18.5 25 L18.5 18.5 L13.5 18.5 L13.5 25 L9 25 L9 15 L6 15 Z" fill="#16a34a" />
+            </svg>
+            <span>HomeAPI</span>
+          </Link>
           <nav className="nav">
             <Link to="/" className={location.pathname === '/' ? 'active' : ''}>Dashboard</Link>
             <Link to="/entries" className={location.pathname.startsWith('/entries') ? 'active' : ''}>Entries</Link>
