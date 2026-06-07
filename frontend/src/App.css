@@ -19,12 +19,21 @@
 }
 
 .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   color: white;
   font-size: 1.25rem;
   font-weight: 700;
   text-decoration: none;
 }
 .logo:hover { text-decoration: none; }
+.logo-icon {
+  background: white;
+  border-radius: 6px;
+  padding: 3px;
+  flex-shrink: 0;
+}
 
 .nav {
   display: flex;
