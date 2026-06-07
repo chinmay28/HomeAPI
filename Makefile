@@ -1,10 +1,15 @@
-.PHONY: build clean test frontend backend dev
+.PHONY: build clean test frontend backend dev test-unit test-integration test-e2e
 
 # Build the single static binary with embedded frontend
 build: frontend backend
 
+# Install frontend deps if missing or stale relative to the lockfile.
+frontend/node_modules: frontend/package.json frontend/package-lock.json
+	cd frontend && npm ci
+	@touch frontend/node_modules
+
 # Build frontend
-frontend:
+frontend: frontend/node_modules
 	cd frontend && npm run build
 	rm -rf cmd/homeapi/frontend_build
 	cp -r frontend/build cmd/homeapi/frontend_build

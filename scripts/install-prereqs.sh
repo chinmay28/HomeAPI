@@ -106,7 +106,10 @@ install_debian() {
 
     if ! check_go; then
         info "Installing Go..."
-        sudo apt-get install -y -qq golang-go 2>/dev/null || install_go_binary
+        sudo apt-get install -y -qq golang-go 2>/dev/null || true
+        # Debian/Ubuntu's golang-go is often older than $GO_MIN_VERSION.
+        # If apt failed outright or installed a too-old version, fall back to the upstream tarball.
+        check_go || install_go_binary
     fi
 
     if ! check_node; then
@@ -130,7 +133,8 @@ install_fedora() {
     fi
     if ! check_go; then
         info "Installing Go..."
-        sudo dnf install -y golang || install_go_binary
+        sudo dnf install -y golang || true
+        check_go || install_go_binary
     fi
     if ! check_node; then
         info "Installing Node.js..."
@@ -146,7 +150,8 @@ install_rhel() {
     fi
     if ! check_go; then
         info "Installing Go..."
-        sudo yum install -y golang || install_go_binary
+        sudo yum install -y golang || true
+        check_go || install_go_binary
     fi
     if ! check_node; then
         info "Installing Node.js..."
@@ -169,7 +174,8 @@ install_arch() {
     fi
     if ! check_go; then
         info "Installing Go..."
-        sudo pacman -S --noconfirm go
+        sudo pacman -S --noconfirm go || true
+        check_go || install_go_binary
     fi
     if ! check_node; then
         info "Installing Node.js..."
