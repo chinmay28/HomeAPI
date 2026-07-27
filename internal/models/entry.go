@@ -48,6 +48,40 @@ type ListParams struct {
 	PerPage  int
 }
 
+// BulkDeleteParams holds the selectors for a bulk delete operation.
+// Keys and IDs are OR'd together; Category and Search further narrow the match.
+// All must be set explicitly to delete every entry (no other selector given).
+type BulkDeleteParams struct {
+	Keys     []string
+	IDs      []int64
+	Category string
+	Search   string
+	All      bool
+	DryRun   bool
+}
+
+// HasSelector reports whether at least one selector was provided, so that a
+// bulk delete cannot wipe the database by accident.
+func (p BulkDeleteParams) HasSelector() bool {
+	return len(p.Keys) > 0 || len(p.IDs) > 0 || p.Category != "" || p.Search != ""
+}
+
+// DeletedEntry identifies an entry matched by a bulk delete.
+type DeletedEntry struct {
+	ID       int64  `json:"id"`
+	Category string `json:"category"`
+	Key      string `json:"key"`
+}
+
+// BulkDeleteResult is the response for bulk delete operations.
+// On a dry run, Matched is populated but Deleted is 0.
+type BulkDeleteResult struct {
+	Deleted int            `json:"deleted"`
+	Matched int            `json:"matched"`
+	DryRun  bool           `json:"dry_run"`
+	Entries []DeletedEntry `json:"entries"`
+}
+
 // PaginatedEntries is the response for listing entries.
 type PaginatedEntries struct {
 	Entries    []Entry `json:"entries"`

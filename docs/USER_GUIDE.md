@@ -132,6 +132,71 @@ curl -X DELETE http://localhost:9999/api/entries/1
 curl -X DELETE http://localhost:9999/api/entries/AAPL
 ```
 
+### Bulk Delete Entries
+
+`DELETE /api/entries` removes every entry matching the selectors you pass.
+Selectors can be query parameters, a JSON body, or both.
+
+```bash
+# By key (repeat the parameter or comma-separate)
+curl -X DELETE "http://localhost:9999/api/entries?key=AAPL&key=GOOGL"
+curl -X DELETE "http://localhost:9999/api/entries?keys=AAPL,GOOGL"
+
+# By numeric ID
+curl -X DELETE "http://localhost:9999/api/entries?ids=1,2,3"
+
+# By query: an entire category, or everything matching a search
+curl -X DELETE "http://localhost:9999/api/entries?category=watchlist"
+curl -X DELETE "http://localhost:9999/api/entries?search=apple"
+
+# Combine selectors — category and search narrow the match
+curl -X DELETE "http://localhost:9999/api/entries?category=watchlist&search=apple"
+
+# Same thing with a JSON body
+curl -X DELETE http://localhost:9999/api/entries \
+  -H "Content-Type: application/json" \
+  -d '{"keys": ["AAPL", "GOOGL"], "category": "watchlist"}'
+```
+
+**Selectors**
+
+| Parameter | Meaning |
+|-----------|---------|
+| `key` / `keys` | Delete entries with these keys (repeatable or comma-separated) |
+| `id` / `ids` | Delete entries with these numeric IDs |
+| `category` | Restrict to (or select) a category |
+| `search` | Restrict to entries whose key or value matches |
+| `all=true` | Delete every entry — required when no other selector is given |
+| `dry_run=true` | Report what would be deleted without deleting anything |
+
+Keys and IDs are OR'd together; `category` and `search` further narrow the
+match. A request with no selector at all is rejected with `400` so you cannot
+empty the database by accident — pass `all=true` if that is what you want.
+
+**Response**
+
+```json
+{
+  "deleted": 2,
+  "matched": 2,
+  "dry_run": false,
+  "entries": [
+    {"id": 1, "category": "watchlist", "key": "AAPL"},
+    {"id": 2, "category": "watchlist", "key": "GOOGL"}
+  ]
+}
+```
+
+Preview before deleting with `dry_run=true`, which lists the matches and
+reports `"deleted": 0`:
+
+```bash
+curl -X DELETE "http://localhost:9999/api/entries?category=watchlist&dry_run=true"
+```
+
+Deleting nothing is not an error: an unmatched selector returns `200` with
+`"deleted": 0`.
+
 ### Get All Categories
 
 ```bash

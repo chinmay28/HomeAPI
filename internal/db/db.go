@@ -2,10 +2,12 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -190,6 +192,113 @@ func (s *Store) DeleteEntry(id int64) (bool, error) {
 		return false, fmt.Errorf("getting rows affected: %w", err)
 	}
 	return rows > 0, nil
+}
+
+// ErrNoBulkDeleteFilter is returned when a bulk delete is attempted without any
+// selector and without explicitly opting in to deleting everything.
+var ErrNoBulkDeleteFilter = errors.New("bulk delete requires at least one selector or all=true")
+
+// BulkDeleteEntries deletes every entry matching the given selectors and
+// returns what was removed. Keys and IDs are OR'd together; category and
+// search narrow the match further. When params.DryRun is set, the matching
+// entries are reported but nothing is deleted.
+func (s *Store) BulkDeleteEntries(params models.BulkDeleteParams) (*models.BulkDeleteResult, error) {
+	if !params.HasSelector() && !params.All {
+		return nil, ErrNoBulkDeleteFilter
+	}
+
+	where := "1=1"
+	args := []interface{}{}
+
+	if params.Category != "" {
+		where += " AND category = ?"
+		args = append(args, params.Category)
+	}
+	if params.Search != "" {
+		where += " AND (key LIKE ? OR value LIKE ?)"
+		searchTerm := "%" + params.Search + "%"
+		args = append(args, searchTerm, searchTerm)
+	}
+	if len(params.Keys) > 0 || len(params.IDs) > 0 {
+		clauses := []string{}
+		if len(params.Keys) > 0 {
+			clauses = append(clauses, "key IN ("+placeholders(len(params.Keys))+")")
+			for _, k := range params.Keys {
+				args = append(args, k)
+			}
+		}
+		if len(params.IDs) > 0 {
+			clauses = append(clauses, "id IN ("+placeholders(len(params.IDs))+")")
+			for _, id := range params.IDs {
+				args = append(args, id)
+			}
+		}
+		where += " AND (" + strings.Join(clauses, " OR ") + ")"
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("beginning transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.Query("SELECT id, category, key FROM entries WHERE "+where+" ORDER BY id", args...)
+	if err != nil {
+		return nil, fmt.Errorf("selecting entries to delete: %w", err)
+	}
+	matched := []models.DeletedEntry{}
+	for rows.Next() {
+		var d models.DeletedEntry
+		if err := rows.Scan(&d.ID, &d.Category, &d.Key); err != nil {
+			rows.Close()
+			return nil, fmt.Errorf("scanning entry to delete: %w", err)
+		}
+		matched = append(matched, d)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, fmt.Errorf("iterating entries to delete: %w", err)
+	}
+	rows.Close()
+
+	result := &models.BulkDeleteResult{
+		Matched: len(matched),
+		DryRun:  params.DryRun,
+		Entries: matched,
+	}
+
+	if params.DryRun || len(matched) == 0 {
+		if err := tx.Commit(); err != nil {
+			return nil, fmt.Errorf("committing transaction: %w", err)
+		}
+		return result, nil
+	}
+
+	// Delete by the exact IDs matched above so the two statements cannot drift.
+	ids := make([]interface{}, len(matched))
+	for i, d := range matched {
+		ids[i] = d.ID
+	}
+	res, err := tx.Exec("DELETE FROM entries WHERE id IN ("+placeholders(len(ids))+")", ids...)
+	if err != nil {
+		return nil, fmt.Errorf("bulk deleting entries: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("getting rows affected: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("committing transaction: %w", err)
+	}
+
+	result.Deleted = int(affected)
+	return result, nil
+}
+
+// placeholders returns a comma-separated list of n SQL placeholders.
+func placeholders(n int) string {
+	return strings.TrimSuffix(strings.Repeat("?,", n), ",")
 }
 
 // ListEntries returns a paginated list of entries, optionally filtered.

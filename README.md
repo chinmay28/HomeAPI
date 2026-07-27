@@ -83,6 +83,7 @@ make build
 | `GET` | `/api/entries/:id` | Get entry |
 | `PUT` | `/api/entries/:id` | Update entry |
 | `DELETE` | `/api/entries/:id` | Delete entry |
+| `DELETE` | `/api/entries?keys=A,B&category=X&search=X` | Bulk delete matching entries |
 | `GET` | `/api/categories` | List categories with counts |
 | `GET` | `/api/export` | Export all data as JSON |
 | `POST` | `/api/import` | Import data (`mode`: "merge" or "replace") |
@@ -109,6 +110,13 @@ curl -X PUT http://localhost:9999/api/entries/1 \
 
 # Delete
 curl -X DELETE http://localhost:9999/api/entries/1
+
+# Bulk delete by key
+curl -X DELETE "http://localhost:9999/api/entries?keys=AAPL,GOOGL"
+
+# Bulk delete everything matching a query (preview first with dry_run)
+curl -X DELETE "http://localhost:9999/api/entries?category=watchlist&search=apple&dry_run=true"
+curl -X DELETE "http://localhost:9999/api/entries?category=watchlist&search=apple"
 
 # Export for backup
 curl http://localhost:9999/api/export -o backup.json

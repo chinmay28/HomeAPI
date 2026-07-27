@@ -75,6 +75,24 @@ export function deleteEntry(id) {
   return request(`/entries/${id}`, { method: 'DELETE' });
 }
 
+// Delete every entry matching the given selectors.
+// Accepts { keys, ids, category, search, all, dryRun }; at least one of
+// keys/ids/category/search is required unless all is true.
+// Resolves to { deleted, matched, dry_run, entries }.
+export function bulkDeleteEntries(params = {}) {
+  const body = {};
+  if (params.keys) body.keys = params.keys;
+  if (params.ids) body.ids = params.ids;
+  if (params.category) body.category = params.category;
+  if (params.search) body.search = params.search;
+  if (params.all) body.all = true;
+  if (params.dryRun) body.dry_run = true;
+  return request('/entries', {
+    method: 'DELETE',
+    body: JSON.stringify(body),
+  });
+}
+
 export function listCategories() {
   return request('/categories');
 }

@@ -35,6 +35,9 @@ func NewRouter(h *Handler, frontendFS fs.FS) http.Handler {
 			h.ListEntries(w, r)
 		case http.MethodPost:
 			h.CreateEntry(w, r)
+		case http.MethodDelete:
+			// Bulk delete by key, ID, category or search query.
+			h.BulkDeleteEntries(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
