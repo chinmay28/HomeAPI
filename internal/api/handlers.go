@@ -2,7 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -257,6 +259,82 @@ func (h *Handler) DeleteEntry(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// bulkDeleteBody is the optional JSON body for a bulk delete request.
+// Fields that are present override or extend the equivalent query parameters.
+type bulkDeleteBody struct {
+	Keys     []string `json:"keys"`
+	IDs      []int64  `json:"ids"`
+	Category *string  `json:"category"`
+	Search   *string  `json:"search"`
+	All      *bool    `json:"all"`
+	DryRun   *bool    `json:"dry_run"`
+}
+
+// BulkDeleteEntries deletes all entries matching the given keys, IDs, category
+// or search query. Selectors may be passed as query parameters, as a JSON body,
+// or both. At least one selector is required unless all=true is given.
+func (h *Handler) BulkDeleteEntries(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+
+	params := models.BulkDeleteParams{
+		Category: q.Get("category"),
+		Search:   q.Get("search"),
+		All:      queryBool(r, "all"),
+		DryRun:   queryBool(r, "dry_run"),
+	}
+	params.Keys = append(params.Keys, splitList(q["key"])...)
+	params.Keys = append(params.Keys, splitList(q["keys"])...)
+
+	for _, raw := range append(splitList(q["id"]), splitList(q["ids"])...) {
+		id, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid entry ID %q", raw), "VALIDATION_ERROR")
+			return
+		}
+		params.IDs = append(params.IDs, id)
+	}
+
+	// A JSON body is optional; an empty body leaves the query parameters as-is.
+	var body bulkDeleteBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil && err != io.EOF {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body", "VALIDATION_ERROR")
+		return
+	}
+	params.Keys = append(params.Keys, body.Keys...)
+	params.IDs = append(params.IDs, body.IDs...)
+	if body.Category != nil {
+		params.Category = *body.Category
+	}
+	if body.Search != nil {
+		params.Search = *body.Search
+	}
+	if body.All != nil {
+		params.All = *body.All
+	}
+	if body.DryRun != nil {
+		params.DryRun = *body.DryRun
+	}
+
+	if !params.HasSelector() && !params.All {
+		writeError(w, http.StatusBadRequest,
+			"Bulk delete requires at least one of key, id, category or search; pass all=true to delete every entry",
+			"VALIDATION_ERROR")
+		return
+	}
+
+	result, err := h.store.BulkDeleteEntries(params)
+	if err != nil {
+		if errors.Is(err, db.ErrNoBulkDeleteFilter) {
+			writeError(w, http.StatusBadRequest, "Bulk delete requires at least one selector", "VALIDATION_ERROR")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "Failed to delete entries", "INTERNAL_ERROR")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
+
 // ListCategories returns all categories with counts.
 func (h *Handler) ListCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.store.ListCategories()
@@ -332,6 +410,34 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 
 func writeError(w http.ResponseWriter, status int, message, code string) {
 	writeJSON(w, status, models.ErrorResponse{Error: message, Code: code})
+}
+
+// splitList expands repeated query values, each of which may itself be a
+// comma-separated list, into a flat slice with empty items dropped.
+func splitList(values []string) []string {
+	var out []string
+	for _, v := range values {
+		for _, part := range strings.Split(v, ",") {
+			part = strings.TrimSpace(part)
+			if part != "" {
+				out = append(out, part)
+			}
+		}
+	}
+	return out
+}
+
+// queryBool reports whether a query parameter is set to a truthy value.
+// A bare parameter with no value (e.g. ?dry_run) counts as true.
+func queryBool(r *http.Request, key string) bool {
+	if !r.URL.Query().Has(key) {
+		return false
+	}
+	switch strings.ToLower(r.URL.Query().Get(key)) {
+	case "", "1", "true", "yes":
+		return true
+	}
+	return false
 }
 
 func queryInt(r *http.Request, key string, defaultVal int) int {

@@ -182,6 +182,28 @@ DELETE /api/entries/city
 - Returns 204 No Content on success
 - Returns 404 if not found
 
+#### Bulk Delete Entries
+```
+DELETE /api/entries?keys=AAPL,GOOGL
+DELETE /api/entries?category=watchlist&search=apple
+DELETE /api/entries?all=true
+```
+- Selectors may be given as query parameters, as a JSON body, or both.
+  Body fields override the equivalent query parameter; `keys`/`ids` are additive.
+- `key`/`keys` and `id`/`ids` accept repeated parameters and comma-separated
+  lists; they are OR'd together. `category` and `search` narrow the match.
+- At least one selector is required. Without one the request returns 400
+  unless `all=true` is passed explicitly, so an unfiltered call cannot empty
+  the database by accident.
+- `dry_run=true` reports the matches without deleting anything.
+- Returns 200 with `{"deleted": N, "matched": N, "dry_run": false, "entries": [{"id","category","key"}]}`.
+  On a dry run, `matched` is populated and `deleted` is 0.
+- Matching nothing is not an error: returns 200 with `deleted: 0`.
+- The select and the delete run in one transaction against the same IDs, so the
+  reported entries are exactly the rows removed.
+- Per-entry routes are unaffected: `DELETE /api/entries/42` and
+  `DELETE /api/entries/city` keep their existing behavior.
+
 #### List Categories
 ```
 GET /api/categories

@@ -46,6 +46,7 @@ The `value` is stored as plain text in the database regardless of content.
 - `GET    /api/entries/:id_or_key`    - Get entry by numeric ID or key string
 - `PUT    /api/entries/:id_or_key`    - Update entry by numeric ID or key string
 - `DELETE /api/entries/:id_or_key`    - Delete entry by numeric ID or key string
+- `DELETE /api/entries`               - Bulk delete (query/body: keys, ids, category, search, all, dry_run)
 - `GET    /api/categories`            - List all categories
 - `GET    /api/export`                - Export all data as JSON
 - `POST   /api/import`                - Import data from JSON

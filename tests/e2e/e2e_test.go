@@ -302,7 +302,9 @@ func TestMethodNotAllowed(t *testing.T) {
 		method string
 		path   string
 	}{
-		{"DELETE", "/api/entries"},
+		// DELETE /api/entries is the bulk delete endpoint, so PATCH stands in
+		// as the unsupported method for the entries collection.
+		{"PATCH", "/api/entries"},
 		{"POST", "/api/categories"},
 		{"PUT", "/api/export"},
 		{"GET", "/api/import"},
