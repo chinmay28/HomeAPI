@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEntry, updateEntry, deleteEntry, displayValue, prettyValue, isStructuredValue } from '../api';
+import { getEntry, updateEntry, deleteEntry, isJSONText, readableValue, valueText } from '../api';
 import Notification from '../components/Notification';
+import ValueField from '../components/ValueField';
 
 function EntryDetail() {
   const { id } = useParams();
@@ -16,7 +17,9 @@ function EntryDetail() {
     getEntry(id)
       .then(e => {
         setEntry(e);
-        setForm({ category: e.category, key: e.key, value: displayValue(e.value) });
+        // Edit from the stored text, not the parsed value — otherwise opening
+        // and saving an entry would collapse hand-formatted JSON to one line.
+        setForm({ category: e.category, key: e.key, value: valueText(e) });
       })
       .catch(err => setNotification({ type: 'error', message: err.message }))
       .finally(() => setLoading(false));
@@ -48,15 +51,15 @@ function EntryDetail() {
   if (!entry) return <div className="card">Entry not found.</div>;
 
   return (
-    <div>
+    <>
       <Notification notification={notification} onClear={() => setNotification(null)} />
 
       <div className="toolbar">
-        <h1 className="page-title" style={{ marginBottom: 0 }}>Entry Detail</h1>
+        <h1 className="page-title">Entry Detail</h1>
         <div className="toolbar-actions">
-          <button className="btn btn-secondary" onClick={() => navigate('/entries')}>Back</button>
-          {!editing && <button className="btn btn-primary" onClick={() => setEditing(true)}>Edit</button>}
-          <button className="btn btn-danger" onClick={handleDelete}>Delete</button>
+          <button className="btn" onClick={() => navigate('/entries')}>Back</button>
+          {!editing && <button className="btn btn--primary" onClick={() => setEditing(true)}>Edit</button>}
+          <button className="btn btn--danger" onClick={handleDelete}>Delete</button>
         </div>
       </div>
 
@@ -64,52 +67,55 @@ function EntryDetail() {
         {editing ? (
           <form onSubmit={handleUpdate}>
             <div className="form-group">
-              <label>Category</label>
-              <input value={form.category} onChange={e => setForm({...form, category: e.target.value})} />
+              <label htmlFor="edit-category">Category</label>
+              <input id="edit-category" value={form.category} onChange={e => setForm({...form, category: e.target.value})} />
             </div>
             <div className="form-group">
-              <label>Key</label>
-              <input value={form.key} onChange={e => setForm({...form, key: e.target.value})} required />
+              <label htmlFor="edit-key">Key</label>
+              <input id="edit-key" value={form.key} onChange={e => setForm({...form, key: e.target.value})} required />
             </div>
-            <div className="form-group">
-              <label>Value</label>
-              <textarea value={form.value} onChange={e => setForm({...form, value: e.target.value})} rows={5} />
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button type="submit" className="btn btn-primary">Save</button>
-              <button type="button" className="btn btn-secondary" onClick={() => { setEditing(false); setForm({ category: entry.category, key: entry.key, value: displayValue(entry.value) }); }}>Cancel</button>
+            <ValueField
+              id="edit-value"
+              value={form.value}
+              onChange={value => setForm({ ...form, value })}
+            />
+            <div className="form-actions">
+              <button type="submit" className="btn btn--primary">Save</button>
+              <button type="button" className="btn" onClick={() => { setEditing(false); setForm({ category: entry.category, key: entry.key, value: valueText(entry) }); }}>Cancel</button>
             </div>
           </form>
         ) : (
           <div>
-            <div className="form-group">
-              <label>ID</label>
-              <div>{entry.id}</div>
+            <div className="detail-field">
+              <div className="detail-field__label">ID</div>
+              <div className="detail-field__value">{entry.id}</div>
             </div>
-            <div className="form-group">
-              <label>Category</label>
-              <div><span className="badge">{entry.category}</span></div>
+            <div className="detail-field">
+              <div className="detail-field__label">Category</div>
+              <div className="detail-field__value"><span className="badge">{entry.category}</span></div>
             </div>
-            <div className="form-group">
-              <label>Key</label>
-              <div style={{ fontWeight: '500' }}>{entry.key}</div>
+            <div className="detail-field">
+              <div className="detail-field__label">Key</div>
+              <div className="detail-field__value detail-field__value--key">{entry.key}</div>
             </div>
-            <div className="form-group">
-              <label>Value{isStructuredValue(entry.value) && <span className="value-badge">JSON</span>}</label>
-              <pre className={`value-display${isStructuredValue(entry.value) ? ' value-json' : ''}`}>{prettyValue(entry.value) || <em style={{ color: '#9ca3af' }}>empty</em>}</pre>
+            <div className="detail-field">
+              <div className="detail-field__label">
+                Value{isJSONText(valueText(entry)) && <span className="value-badge">JSON</span>}
+              </div>
+              <pre className={`value-display${isJSONText(valueText(entry)) ? ' value-json' : ''}`}>{readableValue(entry) || <em className="muted">empty</em>}</pre>
             </div>
-            <div className="form-group">
-              <label>Created</label>
-              <div style={{ color: '#6b7280', fontSize: '0.875rem' }}>{new Date(entry.created_at).toLocaleString()}</div>
+            <div className="detail-field">
+              <div className="detail-field__label">Created</div>
+              <div className="detail-field__value detail-field__value--meta">{new Date(entry.created_at).toLocaleString()}</div>
             </div>
-            <div className="form-group">
-              <label>Updated</label>
-              <div style={{ color: '#6b7280', fontSize: '0.875rem' }}>{new Date(entry.updated_at).toLocaleString()}</div>
+            <div className="detail-field">
+              <div className="detail-field__label">Updated</div>
+              <div className="detail-field__value detail-field__value--meta">{new Date(entry.updated_at).toLocaleString()}</div>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
 

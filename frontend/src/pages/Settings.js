@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
 import { exportData, importData } from '../api';
 import Notification from '../components/Notification';
+import { useTheme } from '../theme';
+
+const THEME_OPTIONS = [
+  { id: 'system', label: 'System' },
+  { id: 'light', label: 'Light' },
+  { id: 'dark', label: 'Dark' },
+];
 
 function Settings() {
+  const { theme, setTheme, resolved } = useTheme();
   const [notification, setNotification] = useState(null);
   const [importMode, setImportMode] = useState('merge');
   const [importFile, setImportFile] = useState(null);
@@ -46,41 +54,66 @@ function Settings() {
   };
 
   return (
-    <div>
+    <>
       <Notification notification={notification} onClear={() => setNotification(null)} />
       <h1 className="page-title">Settings</h1>
 
       <div className="card">
-        <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>Export Data</h2>
-        <p style={{ color: '#6b7280', marginBottom: '1rem', fontSize: '0.875rem' }}>
-          Download all entries as a JSON file for backup or migration.
+        <h2 className="card__title">Appearance</h2>
+        <p className="card__hint">
+          Saved in this browser.{' '}
+          {theme === 'system'
+            ? `Following your system, which is currently ${resolved}.`
+            : `Pinned to ${theme}, ignoring your system setting.`}
         </p>
-        <button className="btn btn-primary" onClick={handleExport}>Export Data</button>
+        <div className="segmented" role="group" aria-label="Theme">
+          {THEME_OPTIONS.map(option => (
+            <button
+              key={option.id}
+              type="button"
+              className={`btn btn--small${theme === option.id ? ' btn--active' : ''}`}
+              aria-pressed={theme === option.id}
+              onClick={() => setTheme(option.id)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="card">
-        <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>Import Data</h2>
-        <p style={{ color: '#6b7280', marginBottom: '1rem', fontSize: '0.875rem' }}>
+        <h2 className="card__title">Export Data</h2>
+        <p className="card__hint">
+          Download all entries as a JSON file for backup or migration.
+        </p>
+        <button className="btn btn--primary" onClick={handleExport}>Export Data</button>
+      </div>
+
+      <div className="card">
+        <h2 className="card__title">Import Data</h2>
+        <p className="card__hint">
           Import entries from a previously exported JSON file.
         </p>
         <form onSubmit={handleImport}>
           <div className="form-group">
-            <label>File</label>
-            <input type="file" accept=".json" onChange={e => setImportFile(e.target.files[0])} />
+            <label htmlFor="import-file">File</label>
+            <input id="import-file" type="file" accept=".json" onChange={e => setImportFile(e.target.files[0])} />
           </div>
           <div className="form-group">
-            <label>Import Mode</label>
-            <select value={importMode} onChange={e => setImportMode(e.target.value)} style={{ width: 'auto' }}>
+            <label htmlFor="import-mode">Import Mode</label>
+            <select id="import-mode" value={importMode} onChange={e => setImportMode(e.target.value)}>
               <option value="merge">Merge (skip existing)</option>
               <option value="replace">Replace (overwrite existing)</option>
             </select>
           </div>
-          <button type="submit" className="btn btn-primary" disabled={!importFile || importing}>
-            {importing ? 'Importing...' : 'Import'}
-          </button>
+          <div className="form-actions">
+            <button type="submit" className="btn btn--primary" disabled={!importFile || importing}>
+              {importing ? 'Importing...' : 'Import'}
+            </button>
+          </div>
         </form>
       </div>
-    </div>
+    </>
   );
 }
 

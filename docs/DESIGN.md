@@ -234,7 +234,10 @@ Content-Type: application/json
 ```
 GET /api/health
 ```
-- Returns 200 with `{"status": "ok", "version": "1.0.0"}`
+- Returns 200 with `{"status": "ok", "version": "v1.0.311"}`
+- `version` is the application version, `vMAJOR.MINOR.PATCH` where the patch
+  number is the repository's commit count (see §6.3). It is unrelated to the
+  export/import format `version`, which is its own field and stays at `"1"`.
 
 ### 4.2 Value Field Encoding
 
@@ -255,6 +258,13 @@ On input, the rules are symmetric:
 | `{"lat": 37.3}` (JSON object) | `{"lat": 37.3}` |
 | `["a","b"]` (JSON array) | `["a","b"]` |
 
+Responses also carry `value_text`: the stored string byte-for-byte, whitespace
+and key order included. `value` cannot serve that purpose — it is parsed JSON,
+and any client that decodes it (every browser does) has already lost the
+formatting the author typed. The GUI reads and edits from `value_text`, which is
+what keeps a hand-indented config from being reflowed by someone opening it and
+pressing Save. Additive field; `value` keeps its meaning and its shape.
+
 ### 4.3 Error Responses
 
 All errors follow a consistent format:
@@ -274,23 +284,79 @@ CORS is enabled for all origins in development. In production, the frontend is s
 
 ### 5.1 Pages
 
-1. **Dashboard** (`/`): Overview showing categories with entry counts
+1. **Dashboard** (`/`): user-selected featured stats over the category list
 2. **Entries List** (`/entries`): Filterable, searchable table of entries
 3. **Entry Detail** (`/entries/:id`): View/edit a single entry
-4. **Import/Export** (`/settings`): Import and export functionality
+4. **Settings** (`/settings`): appearance, import and export
 
-### 5.2 Components
+The dashboard's featured stats are ids in `localStorage`: the four data-free
+ones (`total`, `categories`, `server`, `largest`) plus `category:<name>` for a
+per-category count. Ids that can't be rendered — a category since emptied, an
+id from a newer build — are skipped rather than pruned, so a category that
+comes back brings its card back with it.
 
-- `Header`: Navigation bar with links
-- `EntryTable`: Sortable, filterable table of entries
-- `EntryForm`: Create/edit entry form
-- `CategorySidebar`: Category filter panel
-- `SearchBar`: Global search input
-- `ImportExport`: Import/export controls
-- `Notification`: Toast notifications for success/error
+### 5.2 App shell
 
-### 5.3 State Management
+`App.js` owns the chrome around the routed pages:
+
+- **Header** (sticky): the brand lockup — app icon, wordmark, and the running
+  build number underneath it — on the left; navigation, the primary "New entry"
+  action, and the developer mark on the right.
+- **Tab bar** (phones only): the same destinations as a bottom bar, with a
+  floating action button for "New entry". Both are dismissed while the
+  on-screen keyboard is up (`useKeyboardOpen`) so they never float over it.
+- **Developer badge**: tapping the header mark throws the badge up full screen
+  for three seconds. It is rendered outside the header because the header's
+  `backdrop-filter` makes it a containing block, which would trap a fixed
+  overlay inside the header strip.
+
+Navigation collapses at 720px: the header nav hides, the tab bar appears, and
+the shell becomes a fixed-height app frame with the main pane scrolling inside
+it.
+
+### 5.3 Look and feel
+
+Design tokens (colours, radius, shadows) are CSS custom properties declared
+once in `index.css`. The palette, radius, and header/tab-bar structure are
+shared with [CountRoster](https://github.com/chinmay28/CountRoster) so the two
+self-hosted tools read as one family.
+
+**Theming.** `<html data-theme>` is always `light` or `dark`, resolved from the
+saved preference (`homeapi.theme`, default `system`) or, for `system`, from
+`prefers-color-scheme`. Because the attribute is always present, the dark
+palette is declared once rather than duplicated across a media query and an
+override. An inline script in `index.html` stamps it before the first paint so
+a dark machine never flashes white while the bundle loads; `src/theme.js` owns
+it afterwards and follows OS changes live while the preference is `system`. The
+preference is a module-level store, not component state — the control lives on
+the Settings page but every surface has to change with it, and a stale second
+copy would clobber the choice on the next OS flip.
+
+**Per-device preferences** (theme, featured dashboard stats) live in
+`localStorage`, never in the entries table: they are view settings for one
+browser, and storing them as entries would leak them into `/api/entries`, the
+category list, and every export.
+
+Mobile specifics: 44px minimum tap targets, 16px inputs (below that, iOS Safari
+zooms on focus), `env(safe-area-inset-*)` padding for notched devices, and
+tables that reflow into stacked, labelled cards rather than scrolling
+sideways.
+
+### 5.4 State Management
 React hooks (`useState`, `useEffect`) with a simple API client module. No Redux needed for this scope.
+
+The create-entry form's open state lives in the URL (`/entries?new=1`) so the
+floating action button can open it from any page.
+
+### 5.5 Static serving
+
+Requests that name a real file in the embedded build get that file; everything
+else gets `index.html` so client-side routes survive deep links and refreshes.
+The shell is written out directly rather than by rewriting the path and
+delegating to `http.FileServer` — that redirects any request ending in
+`index.html` to `./`, which the browser resolves against the URL it asked for,
+turning `/entries/9` into a redirect loop. The shell is served `no-cache`; the
+bundles it points at carry content hashes and can be cached freely.
 
 ## 6. Build & Deployment
 
@@ -302,6 +368,25 @@ React hooks (`useState`, `useEffect`) with a simple API client module. No Redux 
 ```
 
 The Makefile orchestrates this into a single `make build` command.
+
+### 6.3 Versioning
+
+The scheme is `vMAJOR.MINOR.PATCH`, where the patch number is the repository's
+commit count — every commit is a patch release, so `v1.0.311` is the 311th
+commit on the 1.0 line.
+
+- `MAJOR`/`MINOR` are Go source constants in `internal/version/version.go`,
+  bumped by hand. That file is the single declaration of them in the tree.
+- `PATCH` only exists at build time (`git rev-list --count HEAD`). The Go
+  binary gets it stamped in via `-ldflags -X`; the web bundle gets it inlined
+  by Create React App from `REACT_APP_VERSION`.
+
+Both sides call `scripts/version.mjs`, so the header, `homeapi --version`, and
+`/api/health` can never disagree. A build made without git — a tarball, or a
+shallow clone — reports patch `0`, which is deliberately a visible
+non-release rather than a plausible-looking lie. Anything building a release
+needs the full commit graph (`fetch-depth: 0`, or `--filter=blob:none` rather
+than `--depth 1`).
 
 ### 6.2 Configuration
 

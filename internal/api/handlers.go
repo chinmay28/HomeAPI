@@ -12,9 +12,15 @@ import (
 
 	"github.com/chinmay28/homeapi/internal/db"
 	"github.com/chinmay28/homeapi/internal/models"
+	"github.com/chinmay28/homeapi/internal/version"
 )
 
-const Version = "1.0.0"
+// Version is what /api/health reports, `vMAJOR.MINOR.<commit count>` — the one
+// rendering lives in internal/version so the binary, the CLI and the web GUI
+// header can never disagree. Not a constant: the patch number is stamped in at
+// link time. This is the *application* version and is unrelated to the
+// export/import format version, which is its own field and stays at "1".
+var Version = version.String()
 
 // Handler holds the API handlers and their dependencies.
 type Handler struct {
@@ -30,12 +36,18 @@ func NewHandler(store *db.Store) *Handler {
 // Value is always a JSON value: objects/arrays are embedded as-is;
 // plain strings are wrapped as {"data": "..."}.
 type entryResponse struct {
-	ID        int64           `json:"id"`
-	Category  string          `json:"category"`
-	Key       string          `json:"key"`
-	Value     json.RawMessage `json:"value"`
-	CreatedAt time.Time       `json:"created_at"`
-	UpdatedAt time.Time       `json:"updated_at"`
+	ID       int64           `json:"id"`
+	Category string          `json:"category"`
+	Key      string          `json:"key"`
+	Value    json.RawMessage `json:"value"`
+	// ValueText is the stored string exactly as it sits in the database —
+	// whitespace, indentation and key order included. `value` cannot carry
+	// that: it is parsed JSON, and any client that decodes it (every browser
+	// does) loses the formatting the author typed. Additive field; `value`
+	// keeps its meaning and shape.
+	ValueText string    `json:"value_text"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // valueToRaw converts a stored string value to its JSON representation.
@@ -69,6 +81,7 @@ func toEntryResponse(e *models.Entry) entryResponse {
 		Category:  e.Category,
 		Key:       e.Key,
 		Value:     valueToRaw(e.Value),
+		ValueText: e.Value,
 		CreatedAt: e.CreatedAt,
 		UpdatedAt: e.UpdatedAt,
 	}

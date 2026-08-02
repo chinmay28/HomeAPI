@@ -68,7 +68,12 @@ make build
 
 - **Single binary** - frontend embedded at compile time, zero runtime dependencies
 - **REST API** - simple JSON API for scripts and automation (`curl`-friendly)
-- **Web GUI** - dashboard, entry management, search, and filtering
+- **Web GUI** - entry management, search, and filtering; mobile-first, with a
+  bottom tab bar on phones
+- **Customizable dashboard** - pick the stats you want on the home page
+- **Light / dark theme** - follows your system, or pin it in Settings
+- **JSON-friendly** - values keep the formatting you gave them, with one-click
+  reindenting
 - **Categories** - organize entries into groups (e.g. "watchlist", "config", "notes")
 - **Search** - full-text search across keys and values
 - **Import/Export** - backup and restore data as JSON
@@ -102,6 +107,11 @@ curl "http://localhost:9999/api/entries?category=watchlist"
 
 # Search
 curl "http://localhost:9999/api/entries?search=apple"
+
+# Read a value. `value` is parsed JSON; `value_text` is the stored string
+# exactly as written, indentation and all.
+curl -s http://localhost:9999/api/entries/location | jq '.value.lat'
+curl -s http://localhost:9999/api/entries/location | jq -r '.value_text'
 
 # Update
 curl -X PUT http://localhost:9999/api/entries/1 \
@@ -164,6 +174,20 @@ make dev
 make clean
 ```
 
+## Versioning
+
+`vMAJOR.MINOR.PATCH`, where the patch number is the repository's commit count —
+every commit is a patch release, so `v1.0.311` is the 311th commit on the 1.0
+line. Major and minor are bumped by hand in `internal/version/version.go`; the
+patch number is stamped in at build time by `make build`.
+
+The same number appears in the GUI header, in `./homeapi --version`, and in
+`GET /api/health`, because all three come from `scripts/version.mjs`.
+
+A build made without git — a source tarball, or a `--depth 1` clone — reports
+patch `0` rather than guessing. Build releases from a full clone
+(`--filter=blob:none` is a cheap one that still carries the commit graph).
+
 ## Project Structure
 
 ```
@@ -172,7 +196,9 @@ internal/api/          HTTP handlers and router
 internal/db/           SQLite database access layer
 internal/models/       Data models and validation
 internal/middleware/    HTTP middleware (CORS, logging)
+internal/version/      Application version (see "Versioning" below)
 frontend/src/          React application source
+scripts/version.mjs    Assembles the version for both builds
 docs/                  Design document and user guide
 tests/integration/     Integration tests (API-level)
 tests/e2e/             End-to-end tests (full workflow)

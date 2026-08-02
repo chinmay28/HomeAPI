@@ -39,16 +39,42 @@ Open your browser to `http://localhost:9999` to access the web interface.
 
 ## Using the Web Interface
 
+The interface works the same on a phone as on a desktop. On a narrow screen the
+navigation moves to a bottom tab bar, tables reflow into stacked cards, and a
+round **+** button in the bottom-right corner creates a new entry. It follows
+your system's light or dark theme automatically; **Settings → Appearance** can
+pin it to one or the other.
+
+The version under the **HomeAPI** wordmark is the build you're running; the
+dashboard's **Server** card shows the version the *server* reports, so a
+mismatch means the page is stale — reload it.
+
 ### Dashboard
-The dashboard shows all your categories with entry counts. Click a category to view its entries.
+The dashboard opens with your total entry count, category count, and server
+health, followed by all your categories with their entry counts. Click a
+category to view its entries.
+
+**Featured stats** — click **Customize stats** to choose which cards appear:
+
+| Stat | Shows |
+|---|---|
+| Total entries | Every entry, across all categories |
+| Categories | How many categories exist |
+| Server status | Whether the API is reachable, and its version |
+| Largest category | The category with the most entries |
+| *category name* | The entry count for one category you care about |
+
+Cards appear in the order you tick them. The choice is saved in that browser, so
+your phone and your laptop can feature different things. **Reset to default**
+puts back the original three.
 
 ### Browsing Entries
-- Use the **category filter** on the left to narrow by category
+- Use the **category filter** to narrow by category
 - Use the **search bar** to find entries by key or value
-- Click any entry to view its details
+- Click any entry's key to view its details
 
 ### Creating Entries
-1. Click the **"New Entry"** button
+1. Click **"New entry"** in the header (or the **+** button on a phone)
 2. Fill in:
    - **Category**: Group name (e.g., "watchlist", "config", "notes")
    - **Key**: Unique identifier within the category (e.g., "AAPL", "thermostat_temp")
@@ -59,6 +85,17 @@ The dashboard shows all your categories with entry counts. Click a category to v
 1. Click on an entry to open it
 2. Modify the fields
 3. Click **"Save"**
+
+### Working with JSON in the GUI
+The value box is a plain text area, and what you type is what gets stored —
+line breaks and indentation included. Formatting a JSON value by hand is safe:
+open the entry again and it comes back exactly as you left it, and saving an
+entry you didn't touch changes nothing.
+
+When the value parses as JSON, a **Format JSON** button appears above the box
+and reindents it with two spaces. JSON that was written on a single line —
+by a `curl` script, say — is pretty-printed for reading on the entry page, but
+only reformatted in storage if you press that button and save.
 
 ### Deleting Entries
 1. Click on an entry to open it
@@ -209,6 +246,13 @@ curl http://localhost:9999/api/categories
 curl http://localhost:9999/api/health
 ```
 
+```json
+{"status": "ok", "version": "v1.0.311"}
+```
+
+`version` is the running build, `vMAJOR.MINOR.PATCH` — the patch number is the
+repository's commit count. `./homeapi --version` prints the same string.
+
 ## Working with JSON Values
 
 The `value` field supports both plain text and structured JSON data.
@@ -266,6 +310,25 @@ curl -X PUT http://localhost:9999/api/entries/location \
   -H "Content-Type: application/json" \
   -d '{"value": {"lat": 37.77, "lon": -122.41}}'
 ```
+
+### The Exact Stored Text (`value_text`)
+
+`value` is parsed JSON, so anything that decodes it loses the indentation and
+key order that were stored. Every response therefore also carries `value_text`:
+the stored string exactly as it sits in the database.
+
+```bash
+$ curl -s http://localhost:9999/api/entries/location | jq -r '.value_text'
+{
+    "city": "San Jose",
+    "lat": 37.33
+}
+```
+
+Use `value` for reading data (`jq '.value.lat'`), and `value_text` when the text
+itself matters — diffing against a file, or editing without reflowing it. The
+GUI edits from `value_text`, which is why it never reformats an entry you did
+not change.
 
 ## Import and Export
 

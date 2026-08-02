@@ -3,10 +3,27 @@ package api
 import (
 	"io/fs"
 	"net/http"
+	pathpkg "path"
 	"strings"
 
 	"github.com/chinmay28/homeapi/internal/middleware"
 )
+
+// serveAppShell writes the SPA's index.html, which every client-side route
+// resolves to. It is deliberately not cached: the bundles it points at carry
+// content hashes in their names, so the shell is the one file that must always
+// come back fresh after an upgrade.
+func serveAppShell(w http.ResponseWriter, frontendFS fs.FS) {
+	index, err := fs.ReadFile(frontendFS, "index.html")
+	if err != nil {
+		http.Error(w, "404 page not found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.WriteHeader(http.StatusOK)
+	w.Write(index)
+}
 
 // NewRouter creates the HTTP router with all API routes and static file serving.
 func NewRouter(h *Handler, frontendFS fs.FS) http.Handler {
@@ -69,19 +86,32 @@ func NewRouter(h *Handler, frontendFS fs.FS) http.Handler {
 				return
 			}
 
-			// Try to serve the file; if not found, serve index.html for SPA routing
-			path := r.URL.Path
-			if path == "/" {
-				path = "/index.html"
+			// Real files (the hashed JS/CSS bundles, icons, the badge images)
+			// go to the file server; everything else is a client-side route and
+			// gets the app shell so deep links and refreshes work.
+			//
+			// The shell is written out here rather than by rewriting the path
+			// and delegating: http.FileServer redirects any request ending in
+			// "index.html" to "./", which the browser resolves against the URL
+			// it actually asked for — so "/entries/9" bounced to "/entries/",
+			// which bounced to itself, and deep links died in a redirect loop.
+			name := strings.TrimPrefix(pathpkg.Clean("/"+r.URL.Path), "/")
+			if name == "" {
+				serveAppShell(w, frontendFS)
+				return
 			}
-
-			// Check if file exists
-			f, err := frontendFS.Open(strings.TrimPrefix(path, "/"))
+			f, err := frontendFS.Open(name)
 			if err != nil {
-				// Serve index.html for SPA client-side routing
-				r.URL.Path = "/index.html"
-			} else {
-				f.Close()
+				serveAppShell(w, frontendFS)
+				return
+			}
+			info, statErr := f.Stat()
+			f.Close()
+			// Directories have no index of their own to show — a URL that
+			// happens to name one (e.g. /static) is still a client route.
+			if statErr != nil || info.IsDir() {
+				serveAppShell(w, frontendFS)
+				return
 			}
 			fileServer.ServeHTTP(w, r)
 		})

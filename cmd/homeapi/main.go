@@ -9,6 +9,7 @@ import (
 
 	"github.com/chinmay28/homeapi/internal/api"
 	"github.com/chinmay28/homeapi/internal/db"
+	"github.com/chinmay28/homeapi/internal/version"
 	"github.com/spf13/cobra"
 )
 
@@ -16,8 +17,9 @@ func main() {
 	var port string
 
 	rootCmd := &cobra.Command{
-		Use:   "homeapi",
-		Short: "HomeAPI server",
+		Use:     "homeapi",
+		Short:   "HomeAPI server",
+		Version: version.String(),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Resolve port: flag > env > default
 			if port == "" {
@@ -43,7 +45,7 @@ func main() {
 			router := api.NewRouter(handler, frontendFS)
 
 			addr := fmt.Sprintf(":%s", port)
-			log.Printf("HomeAPI starting on http://localhost%s", addr)
+			log.Printf("HomeAPI %s starting on http://localhost%s", version.String(), addr)
 
 			if err := http.ListenAndServe(addr, router); err != nil {
 				log.Fatalf("Server failed: %v", err)
