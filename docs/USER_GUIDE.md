@@ -63,6 +63,13 @@ category to view its entries.
 | Server status | Whether the API is reachable, and its version |
 | Largest category | The category with the most entries |
 | *category name* | The entry count for one category you care about |
+| *entry key* | The **value** of one entry, e.g. `minion-sum` |
+
+Entry cards are the point if what you want on the home screen is your data
+rather than counts: tick an entry under **Entry values** and its current value
+is the card. Long values are trimmed to fit; clicking the card opens the entry.
+When you have more than a handful of entries, the search box above the list
+finds them by key or value.
 
 Cards appear in the order you tick them. The choice is saved in that browser, so
 your phone and your laptop can feature different things. **Reset to default**

@@ -107,6 +107,23 @@ export function getEntry(id) {
   return request(`/entries/${id}`);
 }
 
+// Fetch one entry by its key, or null if no entry has that key.
+//
+// `/api/entries/:id_or_key` resolves a numeric segment as an id, so a key like
+// "42" — or one carrying a slash — can't be looked up by path alone. The search
+// fallback covers those: it matches on key or value, so the exact key still has
+// to be picked out of the results.
+export async function getEntryByKey(key) {
+  try {
+    const entry = await getEntry(encodeURIComponent(key));
+    if (entry?.key === key) return entry;
+  } catch {
+    // Not addressable by path — fall through to the search.
+  }
+  const found = await listEntries({ search: key, per_page: 200 });
+  return found.entries.find(e => e.key === key) || null;
+}
+
 export function createEntry(entry) {
   return request('/entries', {
     method: 'POST',
