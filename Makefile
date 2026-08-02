@@ -14,9 +14,10 @@ frontend: frontend/node_modules
 	rm -rf cmd/homeapi/frontend_build
 	cp -r frontend/build cmd/homeapi/frontend_build
 
-# Build Go binary
+# Build Go binary. The patch number is the repo's commit count, which a
+# compiled binary can't read — stamp it in (see internal/version).
 backend: frontend
-	go build -o homeapi ./cmd/homeapi
+	go build -ldflags "-X github.com/chinmay28/homeapi/internal/version.Patch=$$(node scripts/version.mjs --patch)" -o homeapi ./cmd/homeapi
 
 # Development: run Go server only (frontend via npm start separately)
 dev:

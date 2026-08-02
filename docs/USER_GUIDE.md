@@ -39,16 +39,27 @@ Open your browser to `http://localhost:9999` to access the web interface.
 
 ## Using the Web Interface
 
+The interface works the same on a phone as on a desktop. On a narrow screen the
+navigation moves to a bottom tab bar, tables reflow into stacked cards, and a
+round **+** button in the bottom-right corner creates a new entry. It follows
+your system's light or dark theme automatically.
+
+The version under the **HomeAPI** wordmark is the build you're running; the
+dashboard shows the version the *server* reports, so a mismatch means the page
+is stale — reload it.
+
 ### Dashboard
-The dashboard shows all your categories with entry counts. Click a category to view its entries.
+The dashboard shows your total entry count, category count, and server health,
+followed by all your categories with their entry counts. Click a category to
+view its entries.
 
 ### Browsing Entries
-- Use the **category filter** on the left to narrow by category
+- Use the **category filter** to narrow by category
 - Use the **search bar** to find entries by key or value
-- Click any entry to view its details
+- Click any entry's key to view its details
 
 ### Creating Entries
-1. Click the **"New Entry"** button
+1. Click **"New entry"** in the header (or the **+** button on a phone)
 2. Fill in:
    - **Category**: Group name (e.g., "watchlist", "config", "notes")
    - **Key**: Unique identifier within the category (e.g., "AAPL", "thermostat_temp")
@@ -208,6 +219,13 @@ curl http://localhost:9999/api/categories
 ```bash
 curl http://localhost:9999/api/health
 ```
+
+```json
+{"status": "ok", "version": "v1.0.311"}
+```
+
+`version` is the running build, `vMAJOR.MINOR.PATCH` — the patch number is the
+repository's commit count. `./homeapi --version` prints the same string.
 
 ## Working with JSON Values
 

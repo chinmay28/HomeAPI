@@ -1,113 +1,442 @@
+/* ───────────────────────────────────────────────────────────────────────────
+ * App shell
+ *
+ * Wide screens: header with nav, scrolling page, footer.
+ * Phones (≤720px): the shell is the full screen — the header sticks, the main
+ * pane scrolls inside it, and a bottom tab bar carries navigation.
+ * Tokens (colours, radius, shadows) live in index.css.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
 .app {
-  min-height: 100vh;
-}
-
-.header {
-  background: #1e293b;
-  color: white;
-  padding: 0 1rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.header-content {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
+  /* Dynamic viewport height (dvh) tracks the *visible* area as mobile browser
+     toolbars expand/collapse. Plain 100vh is the large viewport, which on
+     short, non-scrolling pages leaves the fixed bottom tab bar stranded behind
+     the browser's bottom toolbar. The 100vh line is the fallback for engines
+     without dvh. */
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 1rem;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.app__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;
+  gap: 0.75rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border);
+  /* Keep the brand + nav reachable while scrolling long entry lists. */
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
 }
 
-.logo {
+.app__brand {
+  display: inline-flex;
+  /* The brand is a two-line lockup (name over version), so hang everything
+     from the top rather than centring against the taller text block. */
+  align-items: flex-start;
+  gap: 0.45rem;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1.25rem;
+  text-decoration: none;
+}
+.app__brand:hover {
+  text-decoration: none;
+}
+.app__brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+/* The running build, MAJOR.MINOR.<commit count> — see src/version.js. Tabular
+   figures so the number doesn't shimmy as the patch count rolls over. */
+.app__brand-version {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.app__brand-logo {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.4rem;
+  display: block;
+}
+
+/* Right-hand side of the header: nav (wide screens only) + developer mark. */
+.app__header-end {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.app__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+/* Developer credit mark. The artwork is a dark badge of its own, so it stays
+   dark in both themes and is separated from the nav by a hairline; the ring
+   keeps it from floating as a hole on the light background. */
+.app__dev {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  background: none;
+  padding: 0 0 0 0.6rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.app__dev:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+.app__dev:active .app__dev-logo {
+  transform: scale(0.94);
+}
+.app__dev-logo {
+  display: block;
+  /* 36px is the smallest size the badge's wordmark still reads at — below it
+     the mark collapses into an anonymous dark dot. */
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: #101010;
+  box-shadow: 0 0 0 1px var(--border);
+  opacity: 0.8;
+  transition: opacity 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+.app__dev:hover .app__dev-logo,
+.app__dev:focus-visible .app__dev-logo {
+  opacity: 1;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+/* ------------------------------------------------------------------ *
+ * The developer badge, thrown up full screen for three seconds when the
+ * header mark is tapped. Everything below is on that one clock: the
+ * overlay fades in, holds, and fades out over exactly DEV_FLASH_MS
+ * (App.js), which is when React unmounts it.
+ * ------------------------------------------------------------------ */
+.dev-flash {
+  position: fixed;
+  inset: 0;
+  /* Above every other layer: header (20), tab bar (25), FAB and toasts (30). */
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(1.2) blur(14px);
+  animation: dev-flash-veil 3s ease-in-out forwards;
+}
+/* Badge over handle, moving as one piece — the scale lives here so the two
+   never drift apart mid-animation. */
+.dev-flash__lockup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.35rem;
+  animation: dev-flash-badge 3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.dev-flash__logo {
+  width: min(64vmin, 26rem);
+  height: min(64vmin, 26rem);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--border), var(--shadow-lg);
+}
+/* Monospace to echo the badge's own wordmark, and tracked out so it reads as
+   a signature under the mark rather than a line of body copy. */
+.dev-flash__handle {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: clamp(0.85rem, 3.2vmin, 1.1rem);
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+@keyframes dev-flash-veil {
+  0% { opacity: 0; }
+  7% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+/* Lands with a small overshoot, then drifts out as the veil clears. */
+@keyframes dev-flash-badge {
+  0% { transform: scale(0.82); }
+  14% { transform: scale(1.02); }
+  22% { transform: scale(1); }
+  82% { transform: scale(1); }
+  100% { transform: scale(1.06); }
+}
+
+/* The cross-fade stays — it isn't motion — but the scale doesn't. */
+@media (prefers-reduced-motion: reduce) {
+  .dev-flash__lockup {
+    animation: none;
+  }
+}
+
+/* ── Main / footer ──────────────────────────────────────────────────────── */
+
+.app__main {
+  flex: 1;
+  padding: 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.app__footer {
+  padding: 1rem 0;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ── Floating action button + mobile tab bar ────────────────────────────── */
+/* Hidden on wide screens, where the header nav already carries navigation and
+   the "New entry" button. */
+.fab,
+.tab-bar {
+  display: none;
+}
+
+.fab {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + 0.9rem);
+  z-index: 30;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-ink);
+  box-shadow: var(--shadow-lg);
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+.fab:hover {
+  text-decoration: none;
+}
+.fab:active {
+  transform: scale(0.93);
+  filter: brightness(0.96);
+}
+.fab svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: stretch;
+  height: calc(var(--tab-bar-height) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: saturate(1.4) blur(12px);
+  border-top: 1px solid var(--border);
+}
+.tab-bar__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab-bar__item:hover {
+  text-decoration: none;
+}
+.tab-bar__item--active {
+  color: var(--accent);
+}
+.tab-bar__icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: block;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
+.btn {
+  font: inherit;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  color: white;
-  font-size: 1.25rem;
-  font-weight: 700;
+  justify-content: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+.btn:hover {
   text-decoration: none;
 }
-.logo:hover { text-decoration: none; }
-.logo-icon {
-  background: white;
-  border-radius: 6px;
-  padding: 3px;
-  flex-shrink: 0;
+.btn:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn--primary {
+  background: var(--primary);
+  color: var(--primary-ink);
+  border-color: transparent;
+  font-weight: 600;
+}
+.btn--danger {
+  background: var(--surface);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+.btn--active {
+  background: var(--primary);
+  color: var(--primary-ink);
+  border-color: transparent;
+  font-weight: 600;
+}
+.btn--small {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.8rem;
 }
 
-.nav {
-  display: flex;
-  gap: 1.5rem;
-}
-.nav a {
-  color: #94a3b8;
-  font-size: 0.9rem;
-  padding: 0.25rem 0;
-  border-bottom: 2px solid transparent;
-  text-decoration: none;
-}
-.nav a:hover, .nav a.active {
-  color: white;
-  border-bottom-color: #3b82f6;
-  text-decoration: none;
-}
-
-.main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1.5rem 1rem;
-}
+/* ── Cards & typography ─────────────────────────────────────────────────── */
 
 .card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+}
+
+.card__title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+.card__hint {
+  color: var(--muted);
+  font-size: 0.875rem;
   margin-bottom: 1rem;
 }
 
-.btn {
-  display: inline-flex;
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--muted);
+  display: grid;
+  gap: 0.9rem;
+  place-items: center;
+}
+
+/* ── Toolbar / filters ──────────────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.toolbar-actions {
+  display: flex;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: background 0.15s;
+  flex-wrap: wrap;
 }
 
-.btn-primary {
-  background: #2563eb;
-  color: white;
+.filters {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
-.btn-primary:hover { background: #1d4ed8; }
-
-.btn-danger {
-  background: #dc2626;
-  color: white;
+.filters select {
+  width: auto;
+  min-width: 11rem;
 }
-.btn-danger:hover { background: #b91c1c; }
-
-.btn-secondary {
-  background: #e2e8f0;
-  color: #475569;
+.filters input {
+  flex: 1 1 16rem;
+  max-width: 24rem;
 }
-.btn-secondary:hover { background: #cbd5e1; }
 
-input, select, textarea {
+/* ── Forms ──────────────────────────────────────────────────────────────── */
+
+input,
+select,
+textarea {
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-family: inherit;
+  font: inherit;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
 }
-input:focus, select:focus, textarea:focus {
+textarea {
+  resize: vertical;
+}
+input:focus,
+select:focus,
+textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
 }
 
 .form-group {
@@ -115,71 +444,20 @@ input:focus, select:focus, textarea:focus {
 }
 .form-group label {
   display: block;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   font-weight: 500;
-  margin-bottom: 0.25rem;
-  color: #374151;
+  margin-bottom: 0.3rem;
+  color: var(--muted);
 }
 
-.notification {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  color: white;
-  font-size: 0.875rem;
-  z-index: 1000;
-  animation: slideIn 0.3s ease;
-}
-.notification.success { background: #16a34a; }
-.notification.error { background: #dc2626; }
-
-@keyframes slideIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 3rem 1rem;
-  color: #6b7280;
-}
-
-/* Shared layout helpers */
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-.toolbar-actions {
+.form-actions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
-.filters {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-.filters select { width: auto; min-width: 150px; }
-.filters input { max-width: 300px; }
-
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
+/* The create-entry form: three fields across on wide screens, stacked on
+   phones (see the mobile block at the bottom). */
 .entry-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 2fr;
@@ -187,45 +465,130 @@ input:focus, select:focus, textarea:focus {
   align-items: end;
 }
 
-.badge {
-  display: inline-block;
-  background: #e0e7ff;
-  color: #3730a3;
-  padding: 0.125rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
+/* ── Stats ──────────────────────────────────────────────────────────────── */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 1rem;
 }
 
-/* JSON / value display */
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--primary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.stat-card__label {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.stat-card__value {
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.stat-card__value--ok {
+  color: var(--success);
+}
+.stat-card__value--bad {
+  color: var(--danger);
+}
+.stat-card__sub {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* ── Badges & values ────────────────────────────────────────────────────── */
+
+.badge {
+  display: inline-block;
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
 .value-display {
-  background: #f9fafb;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
   padding: 0.75rem;
-  border-radius: 6px;
+  border-radius: var(--radius);
   white-space: pre-wrap;
   word-break: break-word;
   font-family: inherit;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   margin: 0;
 }
 .value-json {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   background: #0f172a;
   color: #e2e8f0;
+  border-color: #0f172a;
   overflow-x: auto;
   line-height: 1.5;
 }
 .value-badge {
   display: inline-block;
   margin-left: 0.5rem;
-  background: #dbeafe;
-  color: #1e40af;
+  background: color-mix(in srgb, var(--primary) 25%, transparent);
+  color: var(--accent);
   padding: 0 0.4rem;
   border-radius: 4px;
   font-size: 0.65rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.03em;
   vertical-align: middle;
 }
+
+/* ── Detail page ────────────────────────────────────────────────────────── */
+
+.detail-field {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.detail-field:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.detail-field:first-child {
+  padding-top: 0;
+}
+.detail-field__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+.detail-field__value {
+  overflow-wrap: anywhere;
+}
+.detail-field__value--key {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+.detail-field__value--meta {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* ── Tables ─────────────────────────────────────────────────────────────── */
 
 .table-wrap {
   width: 100%;
@@ -237,78 +600,276 @@ table {
   width: 100%;
   border-collapse: collapse;
 }
-th, td {
+th,
+td {
   text-align: left;
   padding: 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border);
+}
+tbody tr:last-child td {
+  border-bottom: none;
 }
 th {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
-  color: #6b7280;
+  letter-spacing: 0.04em;
+  color: var(--muted);
 }
-tr:hover {
-  background: #f9fafb;
+tbody tr:hover {
+  background: var(--surface-sunken);
 }
 .cell-value {
-  max-width: 300px;
+  max-width: 22rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.cell-meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.cell-key {
+  font-weight: 600;
+}
+.cell-actions {
+  text-align: right;
 }
 .clickable-row {
   cursor: pointer;
 }
 .clickable-row:focus-visible {
-  outline: 2px solid #3730a3;
+  outline: 2px solid var(--primary);
   outline-offset: -2px;
 }
 
-/* ── Mobile ─────────────────────────────────────────────────────────────── */
-@media (max-width: 640px) {
-  .header { padding: 0 0.75rem; }
-  .header-content {
-    height: auto;
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    padding: 0.6rem 0;
+.pager {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+.pager .btn {
+  min-width: 2.5rem;
+}
+
+/* ── Notifications ──────────────────────────────────────────────────────── */
+
+.notification {
+  position: fixed;
+  top: max(1rem, env(safe-area-inset-top));
+  right: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  color: white;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-lg);
+  z-index: 40;
+  animation: slideIn 0.3s ease;
+}
+.notification.success {
+  background: var(--success);
+}
+.notification.error {
+  background: var(--danger);
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification {
+    animation: none;
   }
-  .nav { gap: 1rem; }
+}
 
-  .main { padding: 1rem 0.75rem; }
+/* Respect notched-device safe areas when installed as a standalone web app. */
+@supports (padding: max(0px)) {
+  .app {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+  .app__header {
+    padding-top: max(0.85rem, env(safe-area-inset-top));
+  }
+  .app__footer {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
 
-  .card { padding: 1rem; }
+/* ── Mobile ─────────────────────────────────────────────────────────────── */
 
-  .page-title { font-size: 1.25rem; }
+@media (max-width: 720px) {
+  /* The header keeps only the brand; navigation moves to the tab bar. */
+  .app__nav {
+    display: none;
+  }
+  /* With the nav gone the developer mark stands alone, so the divider it hung
+     off the nav with has nothing left to divide. */
+  .app__dev {
+    padding-left: 0;
+    border-left: none;
+  }
 
-  .toolbar { flex-wrap: wrap; }
+  /* App-shell layout. The shell is the full screen, with the tab bar as an
+     in-flow flex child at its bottom and `.app__main` scrolling inside it.
+     Height comes from the *large* viewport unit (lvh): dvh and
+     window.innerHeight under-report at rest on some mobile browsers and only
+     jump to the true value after an interaction, which would leave the tab bar
+     floating above the real bottom. lvh is the full screen and stays stable
+     across keyboard show/dismiss, so the bar sits flush with no JS. */
+  .app {
+    position: relative;
+    height: 100vh; /* fallback for engines without the large-viewport unit */
+    height: 100lvh;
+    min-height: 0;
+    overflow: hidden;
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+  .app__main {
+    flex: 1;
+    min-height: 0; /* let the flex child shrink so it can scroll */
+    overflow-y: auto;
+    /* `overflow-y: auto` makes the used overflow-x `auto` too, so any child
+       wider than the viewport turns the whole pane sideways-draggable. This
+       pane only ever scrolls vertically — pin the x axis shut. */
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 1rem 0 4rem; /* clear the floating FAB at the end of long lists */
+  }
+  .tab-bar {
+    display: grid;
+    position: static; /* in normal flow at the bottom of the shell */
+    /* Cancel the shell's side padding so the bar spans edge-to-edge and blends
+       into the screen, instead of floating as an inset panel. */
+    margin-left: max(-0.75rem, calc(env(safe-area-inset-left) * -1));
+    margin-right: max(-0.75rem, calc(env(safe-area-inset-right) * -1));
+  }
+  /* Float the FAB against the shell (not the layout viewport) so it tracks
+     the visible bottom from the first paint, like the tab bar. */
+  .fab {
+    display: flex;
+    position: absolute;
+    bottom: calc(var(--tab-bar-height) + 0.9rem);
+    right: 1rem;
+  }
+  /* Dismiss the bottom chrome whenever the on-screen keyboard is up, and bring
+     it back once the keyboard closes. */
+  .app--keyboard-open .tab-bar,
+  .app--keyboard-open .fab {
+    display: none;
+  }
+  /* The footer is desktop-only chrome; hide it under the tab bar. */
+  .app__footer {
+    display: none;
+  }
 
-  .filters { flex-direction: column; }
+  /* Comfortable 44px+ tap targets across interactive controls. */
+  .btn {
+    padding: 0.65rem 1rem;
+    min-height: 2.75rem;
+  }
+  .btn--small {
+    min-height: 2.25rem;
+    padding: 0.4rem 0.7rem;
+  }
+
+  /* 16px inputs stop iOS Safari from zooming in on focus. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+    min-height: 2.75rem;
+  }
+
+  .page-title {
+    font-size: 1.35rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  /* Stack the page title above its actions: side by side, a wrapped action
+     row shrink-to-fits and the buttons inside it start wrapping again a few
+     dozen pixels short of the screen edge. As its own full-width row, three
+     actions (Back / Edit / Delete) sit comfortably on one line. */
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .form-actions .btn {
+    /* Form submits are the page's primary action — let them fill the row. */
+    flex: 1 1 5rem;
+    min-width: 0;
+  }
+
+  .filters {
+    flex-direction: column;
+  }
   .filters select,
-  .filters input { width: 100%; max-width: none; min-width: 0; }
+  .filters input {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    /* The row is a column here, so the desktop `flex: 1 1 16rem` would read as
+       a 16rem *height*. Size these from their content instead. */
+    flex: 0 0 auto;
+  }
 
-  .entry-form-grid { grid-template-columns: 1fr; }
+  .entry-form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .stat-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+  .stat-card {
+    padding: 0.85rem 1rem;
+  }
+  .stat-card__value {
+    font-size: 1.5rem;
+  }
 
   .notification {
     left: 0.75rem;
     right: 0.75rem;
-    top: 0.75rem;
+    top: max(0.75rem, env(safe-area-inset-top));
   }
 
-  /* Stacked card layout for tables */
-  .responsive-table thead { display: none; }
+  /* Stacked card layout for tables: each row becomes its own labelled card, so
+     nothing has to scroll sideways to be read. */
+  .responsive-table thead {
+    display: none;
+  }
   .responsive-table,
   .responsive-table tbody,
   .responsive-table tr,
-  .responsive-table td { display: block; width: 100%; }
-  .responsive-table tr {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    margin-bottom: 0.75rem;
-    padding: 0.25rem 0.5rem;
+  .responsive-table td {
+    display: block;
+    width: 100%;
   }
-  .responsive-table tr:hover { background: transparent; }
+  .responsive-table tr {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    margin-bottom: 0.6rem;
+    padding: 0.35rem 0.75rem;
+  }
+  .responsive-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+  .responsive-table tbody tr:hover {
+    background: var(--surface);
+  }
   .responsive-table td {
     border: none;
     padding: 0.4rem 0;
@@ -316,13 +877,18 @@ tr:hover {
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
+    min-width: 0;
+  }
+  .responsive-table tbody tr:last-child td {
+    border-bottom: none;
   }
   .responsive-table td::before {
     content: attr(data-label);
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 600;
     text-transform: uppercase;
-    color: #6b7280;
+    letter-spacing: 0.04em;
+    color: var(--muted);
     flex-shrink: 0;
   }
   .responsive-table td.cell-value {
@@ -331,5 +897,16 @@ tr:hover {
     text-align: right;
     word-break: break-word;
   }
-  .responsive-table td.cell-actions { justify-content: flex-end; }
+  .responsive-table td.cell-actions {
+    justify-content: flex-end;
+  }
+  .responsive-table td.cell-actions::before {
+    content: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .stat-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -12,9 +12,15 @@ import (
 
 	"github.com/chinmay28/homeapi/internal/db"
 	"github.com/chinmay28/homeapi/internal/models"
+	"github.com/chinmay28/homeapi/internal/version"
 )
 
-const Version = "1.0.0"
+// Version is what /api/health reports, `vMAJOR.MINOR.<commit count>` — the one
+// rendering lives in internal/version so the binary, the CLI and the web GUI
+// header can never disagree. Not a constant: the patch number is stamped in at
+// link time. This is the *application* version and is unrelated to the
+// export/import format version, which is its own field and stays at "1".
+var Version = version.String()
 
 // Handler holds the API handlers and their dependencies.
 type Handler struct {

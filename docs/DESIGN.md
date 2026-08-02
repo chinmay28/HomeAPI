@@ -234,7 +234,10 @@ Content-Type: application/json
 ```
 GET /api/health
 ```
-- Returns 200 with `{"status": "ok", "version": "1.0.0"}`
+- Returns 200 with `{"status": "ok", "version": "v1.0.311"}`
+- `version` is the application version, `vMAJOR.MINOR.PATCH` where the patch
+  number is the repository's commit count (see §6.3). It is unrelated to the
+  export/import format `version`, which is its own field and stays at `"1"`.
 
 ### 4.2 Value Field Encoding
 
@@ -279,18 +282,54 @@ CORS is enabled for all origins in development. In production, the frontend is s
 3. **Entry Detail** (`/entries/:id`): View/edit a single entry
 4. **Import/Export** (`/settings`): Import and export functionality
 
-### 5.2 Components
+### 5.2 App shell
 
-- `Header`: Navigation bar with links
-- `EntryTable`: Sortable, filterable table of entries
-- `EntryForm`: Create/edit entry form
-- `CategorySidebar`: Category filter panel
-- `SearchBar`: Global search input
-- `ImportExport`: Import/export controls
-- `Notification`: Toast notifications for success/error
+`App.js` owns the chrome around the routed pages:
 
-### 5.3 State Management
+- **Header** (sticky): the brand lockup — app icon, wordmark, and the running
+  build number underneath it — on the left; navigation, the primary "New entry"
+  action, and the developer mark on the right.
+- **Tab bar** (phones only): the same destinations as a bottom bar, with a
+  floating action button for "New entry". Both are dismissed while the
+  on-screen keyboard is up (`useKeyboardOpen`) so they never float over it.
+- **Developer badge**: tapping the header mark throws the badge up full screen
+  for three seconds. It is rendered outside the header because the header's
+  `backdrop-filter` makes it a containing block, which would trap a fixed
+  overlay inside the header strip.
+
+Navigation collapses at 720px: the header nav hides, the tab bar appears, and
+the shell becomes a fixed-height app frame with the main pane scrolling inside
+it.
+
+### 5.3 Look and feel
+
+Design tokens (colours, radius, shadows) are CSS custom properties declared
+once in `index.css`, with a `prefers-color-scheme: dark` override — so the GUI
+follows the system theme without any JavaScript. The palette, radius, and
+header/tab-bar structure are shared with
+[CountRoster](https://github.com/chinmay28/CountRoster) so the two self-hosted
+tools read as one family.
+
+Mobile specifics: 44px minimum tap targets, 16px inputs (below that, iOS Safari
+zooms on focus), `env(safe-area-inset-*)` padding for notched devices, and
+tables that reflow into stacked, labelled cards rather than scrolling
+sideways.
+
+### 5.4 State Management
 React hooks (`useState`, `useEffect`) with a simple API client module. No Redux needed for this scope.
+
+The create-entry form's open state lives in the URL (`/entries?new=1`) so the
+floating action button can open it from any page.
+
+### 5.5 Static serving
+
+Requests that name a real file in the embedded build get that file; everything
+else gets `index.html` so client-side routes survive deep links and refreshes.
+The shell is written out directly rather than by rewriting the path and
+delegating to `http.FileServer` — that redirects any request ending in
+`index.html` to `./`, which the browser resolves against the URL it asked for,
+turning `/entries/9` into a redirect loop. The shell is served `no-cache`; the
+bundles it points at carry content hashes and can be cached freely.
 
 ## 6. Build & Deployment
 
@@ -302,6 +341,25 @@ React hooks (`useState`, `useEffect`) with a simple API client module. No Redux 
 ```
 
 The Makefile orchestrates this into a single `make build` command.
+
+### 6.3 Versioning
+
+The scheme is `vMAJOR.MINOR.PATCH`, where the patch number is the repository's
+commit count — every commit is a patch release, so `v1.0.311` is the 311th
+commit on the 1.0 line.
+
+- `MAJOR`/`MINOR` are Go source constants in `internal/version/version.go`,
+  bumped by hand. That file is the single declaration of them in the tree.
+- `PATCH` only exists at build time (`git rev-list --count HEAD`). The Go
+  binary gets it stamped in via `-ldflags -X`; the web bundle gets it inlined
+  by Create React App from `REACT_APP_VERSION`.
+
+Both sides call `scripts/version.mjs`, so the header, `homeapi --version`, and
+`/api/health` can never disagree. A build made without git — a tarball, or a
+shallow clone — reports patch `0`, which is deliberately a visible
+non-release rather than a plausible-looking lie. Anything building a release
+needs the full commit graph (`fetch-depth: 0`, or `--filter=blob:none` rather
+than `--depth 1`).
 
 ### 6.2 Configuration
 

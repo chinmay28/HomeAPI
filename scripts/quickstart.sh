@@ -74,14 +74,23 @@ chmod 750 "$DATA_DIR"
 
 # --- Fetch / update source ---------------------------------------------------
 
+# The build stamps the binary's patch number from `git rev-list --count HEAD`,
+# so the clone has to carry the whole commit graph — a --depth 1 clone would
+# answer "1" and ship a build calling itself v1.0.1. `--filter=blob:none` keeps
+# it cheap: full history, file contents fetched only as needed.
 if [ -d "$SRC_DIR/.git" ]; then
     info "Updating source in $SRC_DIR (ref: $REF)..."
-    git -C "$SRC_DIR" fetch --depth 1 origin "$REF"
+    git -C "$SRC_DIR" fetch --filter=blob:none origin "$REF"
+    # An existing shallow checkout (from an older installer) still reports a
+    # bogus commit count — deepen it once so the version comes out right.
+    if [ "$(git -C "$SRC_DIR" rev-parse --is-shallow-repository)" = "true" ]; then
+        git -C "$SRC_DIR" fetch --unshallow --filter=blob:none origin 2>/dev/null || true
+    fi
     git -C "$SRC_DIR" checkout -q FETCH_HEAD
 else
     info "Cloning $REPO into $SRC_DIR (ref: $REF)..."
     rm -rf "$SRC_DIR"
-    git clone --depth 1 --branch "$REF" "$REPO" "$SRC_DIR" 2>/dev/null \
+    git clone --filter=blob:none --branch "$REF" "$REPO" "$SRC_DIR" 2>/dev/null \
         || { git clone "$REPO" "$SRC_DIR"; git -C "$SRC_DIR" checkout -q "$REF"; }
 fi
 

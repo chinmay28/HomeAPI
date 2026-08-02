@@ -46,41 +46,43 @@ function Settings() {
   };
 
   return (
-    <div>
+    <>
       <Notification notification={notification} onClear={() => setNotification(null)} />
       <h1 className="page-title">Settings</h1>
 
       <div className="card">
-        <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>Export Data</h2>
-        <p style={{ color: '#6b7280', marginBottom: '1rem', fontSize: '0.875rem' }}>
+        <h2 className="card__title">Export Data</h2>
+        <p className="card__hint">
           Download all entries as a JSON file for backup or migration.
         </p>
-        <button className="btn btn-primary" onClick={handleExport}>Export Data</button>
+        <button className="btn btn--primary" onClick={handleExport}>Export Data</button>
       </div>
 
       <div className="card">
-        <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>Import Data</h2>
-        <p style={{ color: '#6b7280', marginBottom: '1rem', fontSize: '0.875rem' }}>
+        <h2 className="card__title">Import Data</h2>
+        <p className="card__hint">
           Import entries from a previously exported JSON file.
         </p>
         <form onSubmit={handleImport}>
           <div className="form-group">
-            <label>File</label>
-            <input type="file" accept=".json" onChange={e => setImportFile(e.target.files[0])} />
+            <label htmlFor="import-file">File</label>
+            <input id="import-file" type="file" accept=".json" onChange={e => setImportFile(e.target.files[0])} />
           </div>
           <div className="form-group">
-            <label>Import Mode</label>
-            <select value={importMode} onChange={e => setImportMode(e.target.value)} style={{ width: 'auto' }}>
+            <label htmlFor="import-mode">Import Mode</label>
+            <select id="import-mode" value={importMode} onChange={e => setImportMode(e.target.value)}>
               <option value="merge">Merge (skip existing)</option>
               <option value="replace">Replace (overwrite existing)</option>
             </select>
           </div>
-          <button type="submit" className="btn btn-primary" disabled={!importFile || importing}>
-            {importing ? 'Importing...' : 'Import'}
-          </button>
+          <div className="form-actions">
+            <button type="submit" className="btn btn--primary" disabled={!importFile || importing}>
+              {importing ? 'Importing...' : 'Import'}
+            </button>
+          </div>
         </form>
       </div>
-    </div>
+    </>
   );
 }
 

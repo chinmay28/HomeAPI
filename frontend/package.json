@@ -9,8 +9,8 @@
     "react-scripts": "5.0.1"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "node scripts/with-version.mjs react-scripts start",
+    "build": "node scripts/with-version.mjs react-scripts build",
     "test": "react-scripts test",
     "lint": "echo 'No separate linter configured'"
   },

@@ -29,7 +29,9 @@ internal/api/        - HTTP handlers and router
 internal/db/         - Database access layer
 internal/models/     - Data models
 internal/middleware/  - HTTP middleware (CORS, logging, auth)
+internal/version/    - Application version (Major/Minor constants, stamped Patch)
 frontend/            - React application
+scripts/version.mjs  - Assembles the version for the Go and web builds
 docs/                - Design document and user guide
 tests/integration/   - Integration tests (API-level)
 tests/e2e/           - End-to-end tests
@@ -67,9 +69,23 @@ The `value` field behaves differently on input vs output:
 `/api/entries/city` instead of `/api/entries/1`. Numeric path segments are
 resolved as IDs first; non-numeric segments are resolved as keys.
 
+## Versioning
+`vMAJOR.MINOR.PATCH`, where PATCH is the repository's commit count — every commit
+is a patch release. Major/minor are Go source constants in
+`internal/version/version.go` (bump by hand); the patch number is stamped at
+build time. `scripts/version.mjs` is the one place it is assembled, and both the
+Go binary (`-ldflags -X`) and the web bundle (`REACT_APP_VERSION`) read from it,
+so the GUI header, `--version`, and `/api/health` always agree. A build without
+git reports patch `0`.
+
+The application version is *not* the export/import format version — that is a
+separate `version` field and stays at `"1"`.
+
 ## Code Style
 - Go: standard `gofmt` formatting, error wrapping with `fmt.Errorf("context: %w", err)`
 - React: functional components with hooks, no class components
+- CSS: design tokens as custom properties in `index.css`; no inline `style` props
+  for anything a class can express, and no colour literals outside the tokens
 - Tests: table-driven tests in Go, descriptive test names
 
 ## Backward Compatibility — IMPORTANT

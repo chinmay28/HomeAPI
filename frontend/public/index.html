@@ -2,9 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg" />
-  <meta name="theme-color" content="#16a34a" />
+  <!-- viewport-fit=cover lets the layout reach under a notch; the safe-area
+       insets in App.css then keep the chrome clear of it. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/icon.svg" />
+  <link rel="apple-touch-icon" href="%PUBLIC_URL%/icon.svg" />
+  <meta name="description" content="HomeAPI — a self-hosted key-value store with a REST API and web GUI." />
+  <!-- One colour per scheme so the mobile browser chrome matches the app's
+       own background instead of banding against it. -->
+  <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#18181b" media="(prefers-color-scheme: dark)" />
   <title>HomeAPI</title>
 </head>
 <body>

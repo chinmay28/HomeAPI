@@ -8,13 +8,25 @@ function Entries() {
   const [data, setData] = useState({ entries: [], total: 0, page: 1, per_page: 50, total_pages: 0 });
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ category: '', key: '', value: '' });
   const [notification, setNotification] = useState(null);
 
   const category = searchParams.get('category') || '';
   const search = searchParams.get('search') || '';
   const page = parseInt(searchParams.get('page') || '1', 10);
+  // The create form's open state lives in the URL so the app-shell's floating
+  // action button ("New entry", which is just a link to ?new=1) can open it
+  // from any page.
+  const showForm = searchParams.get('new') === '1';
+
+  const setShowForm = useCallback((open) => {
+    setSearchParams(prev => {
+      const params = new URLSearchParams(prev);
+      if (open) params.set('new', '1');
+      else params.delete('new');
+      return params;
+    }, { replace: true });
+  }, [setSearchParams]);
 
   const fetchEntries = useCallback(() => {
     setLoading(true);
@@ -66,14 +78,18 @@ function Entries() {
   };
 
   return (
-    <div>
+    <>
       <Notification notification={notification} onClear={() => setNotification(null)} />
 
       <div className="toolbar">
-        <h1 className="page-title" style={{ marginBottom: 0 }}>Entries</h1>
-        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel' : 'New Entry'}
-        </button>
+        <h1 className="page-title">Entries</h1>
+        {/* Opening the form is the header's "New entry" button (and the
+            floating action button on phones); this only closes it again. */}
+        {showForm && (
+          <div className="toolbar-actions">
+            <button className="btn" onClick={() => setShowForm(false)}>Cancel</button>
+          </div>
+        )}
       </div>
 
       {showForm && (
@@ -81,31 +97,34 @@ function Entries() {
           <form onSubmit={handleCreate}>
             <div className="entry-form-grid">
               <div className="form-group">
-                <label>Category</label>
-                <input value={form.category} onChange={e => setForm({...form, category: e.target.value})} placeholder="default" />
+                <label htmlFor="new-category">Category</label>
+                <input id="new-category" value={form.category} onChange={e => setForm({...form, category: e.target.value})} placeholder="default" />
               </div>
               <div className="form-group">
-                <label>Key *</label>
-                <input value={form.key} onChange={e => setForm({...form, key: e.target.value})} placeholder="e.g. AAPL" required />
+                <label htmlFor="new-key">Key *</label>
+                <input id="new-key" value={form.key} onChange={e => setForm({...form, key: e.target.value})} placeholder="e.g. AAPL" required />
               </div>
               <div className="form-group">
-                <label>Value</label>
-                <input value={form.value} onChange={e => setForm({...form, value: e.target.value})} placeholder="e.g. Apple Inc." />
+                <label htmlFor="new-value">Value</label>
+                <input id="new-value" value={form.value} onChange={e => setForm({...form, value: e.target.value})} placeholder="e.g. Apple Inc." />
               </div>
             </div>
-            <button type="submit" className="btn btn-primary" style={{ marginTop: '0.5rem' }}>Save</button>
+            <div className="form-actions">
+              <button type="submit" className="btn btn--primary">Save</button>
+            </div>
           </form>
         </div>
       )}
 
       <div className="filters">
-        <select value={category} onChange={e => setFilter('category', e.target.value)}>
+        <select aria-label="Filter by category" value={category} onChange={e => setFilter('category', e.target.value)}>
           <option value="">All Categories</option>
           {categories.map(c => (
             <option key={c.name} value={c.name}>{c.name} ({c.count})</option>
           ))}
         </select>
         <input
+          aria-label="Search entries"
           placeholder="Search entries..."
           value={search}
           onChange={e => setFilter('search', e.target.value)}
@@ -120,38 +139,38 @@ function Entries() {
         ) : (
           <>
             <div className="table-wrap">
-            <table className="responsive-table">
-              <thead>
-                <tr>
-                  <th>Category</th>
-                  <th>Key</th>
-                  <th>Value</th>
-                  <th>Updated</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.entries.map(entry => (
-                  <tr key={entry.id}>
-                    <td data-label="Category"><span className="badge">{entry.category}</span></td>
-                    <td data-label="Key"><Link to={`/entries/${entry.id}`} style={{ fontWeight: '500' }}>{entry.key}</Link></td>
-                    <td data-label="Value" className="cell-value">{displayValue(entry.value)}</td>
-                    <td data-label="Updated" style={{ fontSize: '0.8rem', color: '#6b7280' }}>{new Date(entry.updated_at).toLocaleString()}</td>
-                    <td className="cell-actions">
-                      <button className="btn btn-danger" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }} onClick={() => handleDelete(entry.id)}>Delete</button>
-                    </td>
+              <table className="responsive-table">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Key</th>
+                    <th>Value</th>
+                    <th>Updated</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {data.entries.map(entry => (
+                    <tr key={entry.id}>
+                      <td data-label="Category"><span className="badge">{entry.category}</span></td>
+                      <td data-label="Key" className="cell-key"><Link to={`/entries/${entry.id}`}>{entry.key}</Link></td>
+                      <td data-label="Value" className="cell-value">{displayValue(entry.value)}</td>
+                      <td data-label="Updated" className="cell-meta">{new Date(entry.updated_at).toLocaleString()}</td>
+                      <td className="cell-actions">
+                        <button className="btn btn--danger btn--small" onClick={() => handleDelete(entry.id)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
             {data.total_pages > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1rem' }}>
+              <div className="pager">
                 {Array.from({ length: data.total_pages }, (_, i) => i + 1).map(p => (
                   <button
                     key={p}
-                    className={`btn ${p === data.page ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ padding: '0.25rem 0.75rem', minWidth: '2rem' }}
+                    className={`btn btn--small ${p === data.page ? 'btn--active' : ''}`}
+                    aria-current={p === data.page ? 'page' : undefined}
                     onClick={() => { const params = new URLSearchParams(searchParams); params.set('page', String(p)); setSearchParams(params); }}
                   >
                     {p}
@@ -162,7 +181,7 @@ function Entries() {
           </>
         )}
       </div>
-    </div>
+    </>
   );
 }
 
