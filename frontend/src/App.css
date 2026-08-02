@@ -533,12 +533,40 @@ textarea:focus {
 .stat-card__value--bad {
   color: var(--danger);
 }
+/* A pinned entry's value is as long as the author made it. Past a figure's
+   worth of characters it reads as text, so it is set at body size and capped
+   at a few lines — the card stays a card. */
+.stat-card__value--text {
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
 .stat-card__sub {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
   font-size: 0.72rem;
   color: var(--muted);
   overflow-wrap: anywhere;
+}
+
+/* A card that is the way into its entry. It stays a card, not a link: the
+   underline and link colour would fight the figure it exists to show. */
+.stat-card--link {
+  color: inherit;
+  text-decoration: none;
+}
+.stat-card--link:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-lg);
+}
+.stat-card--link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 /* Picker for which stats the dashboard features. */
@@ -567,6 +595,10 @@ textarea:focus {
   min-height: 2.25rem;
   cursor: pointer;
   overflow-wrap: anywhere;
+}
+/* Takes a row of its own above the options it filters. */
+.stat-picker__search {
+  flex: 1 1 100%;
 }
 .stat-picker__option input {
   width: 1.05rem;
@@ -786,15 +818,19 @@ tbody tr:hover {
 
   /* App-shell layout. The shell is the full screen, with the tab bar as an
      in-flow flex child at its bottom and `.app__main` scrolling inside it.
-     Height comes from the *large* viewport unit (lvh): dvh and
-     window.innerHeight under-report at rest on some mobile browsers and only
-     jump to the true value after an interaction, which would leave the tab bar
-     floating above the real bottom. lvh is the full screen and stays stable
-     across keyboard show/dismiss, so the bar sits flush with no JS. */
+     Height comes from the *small* viewport unit (svh): the visible area with
+     the browser's toolbars showing, which is what the reader actually has.
+     lvh — the screen with the toolbars hidden — is taller than that at rest,
+     which pushed the bottom of the shell under the toolbar and cut the tab bar
+     in half, and left the document itself scrollable by the difference so the
+     sticky header could drift up out of view. svh doesn't move: nothing here
+     scrolls the document (the pane scrolls internally), so the toolbars never
+     collapse and there is no larger state to track. In a standalone/home-screen
+     app, where there are no toolbars, svh is the full screen as before. */
   .app {
     position: relative;
-    height: 100vh; /* fallback for engines without the large-viewport unit */
-    height: 100lvh;
+    height: 100vh; /* fallback for engines without the small-viewport unit */
+    height: 100svh;
     min-height: 0;
     overflow: hidden;
     padding-left: max(0.75rem, env(safe-area-inset-left));
@@ -906,6 +942,10 @@ tbody tr:hover {
   }
   .stat-card__value {
     font-size: 1.5rem;
+  }
+  /* Restated because the headline size above would otherwise win on order. */
+  .stat-card__value--text {
+    font-size: 0.95rem;
   }
 
   .notification {

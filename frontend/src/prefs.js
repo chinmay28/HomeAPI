@@ -30,6 +30,16 @@ export function statCategory(id) {
   return id.startsWith('category:') ? id.slice('category:'.length) : null;
 }
 
+/** A pinned entry's value card is identified as `entry:<key>`. */
+export function entryStatId(key) {
+  return `entry:${key}`;
+}
+
+/** The key an `entry:<key>` id refers to, or null for any other stat. */
+export function statEntryKey(id) {
+  return id.startsWith('entry:') ? id.slice('entry:'.length) : null;
+}
+
 function read(key, fallback) {
   try {
     const raw = window.localStorage.getItem(key);
@@ -54,10 +64,11 @@ function write(key, value) {
 /**
  * The stat ids featured on the dashboard, in display order.
  *
- * Ids of categories that have since been deleted are kept, not pruned: a
- * category comes back the moment an entry is filed under it again, and
- * silently forgetting the choice would be worse than a card that waits.
- * The dashboard skips ids it can't render.
+ * Ids of categories or entries that have since been deleted are kept, not
+ * pruned: a category comes back the moment an entry is filed under it again,
+ * as does a key the moment it is written again, and silently forgetting the
+ * choice would be worse than a card that waits. The dashboard skips ids it
+ * can't render.
  */
 export function readFeaturedStats() {
   const saved = read(FEATURED_STATS_KEY, null);

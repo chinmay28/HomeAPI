@@ -290,10 +290,16 @@ CORS is enabled for all origins in development. In production, the frontend is s
 4. **Settings** (`/settings`): appearance, import and export
 
 The dashboard's featured stats are ids in `localStorage`: the four data-free
-ones (`total`, `categories`, `server`, `largest`) plus `category:<name>` for a
-per-category count. Ids that can't be rendered — a category since emptied, an
-id from a newer build — are skipped rather than pruned, so a category that
-comes back brings its card back with it.
+ones (`total`, `categories`, `server`, `largest`), `category:<name>` for a
+per-category count, and `entry:<key>` for one entry's value shown as a card.
+Ids that can't be rendered — a category since emptied, an entry since deleted,
+an id from a newer build — are skipped rather than pruned, so a category or key
+that comes back brings its card back with it.
+
+Pinned entries are fetched per key rather than off the entries list, since no
+page size is both cheap and sure to include a given key. `getEntryByKey` tries
+`/api/entries/<key>` and falls back to a search when the path can't address the
+key — a numeric key resolves as an id there, and a key with a slash not at all.
 
 ### 5.2 App shell
 

@@ -1,6 +1,7 @@
 import {
   displayValue,
   formatJSONText,
+  getEntryByKey,
   isJSONText,
   previewValue,
   readableValue,
@@ -113,5 +114,53 @@ describe('previewValue', () => {
 
   test('falls back to the parsed value without value_text', () => {
     expect(previewValue({ value: { data: 'San Jose' } })).toBe('San Jose');
+  });
+});
+
+describe('getEntryByKey', () => {
+  const entry = (over) => ({ id: 1, category: 'default', key: 'city', value: { data: 'x' }, ...over });
+
+  // A response body keyed by the path the request asked for.
+  function mockFetch(routes) {
+    global.fetch = jest.fn((url) => {
+      const body = routes[url];
+      if (body === undefined) {
+        return Promise.resolve({
+          ok: false, status: 404, json: () => Promise.resolve({ error: 'Entry not found' }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) });
+    });
+  }
+
+  afterEach(() => { delete global.fetch; });
+
+  test('returns the entry the path lookup resolves', async () => {
+    mockFetch({ '/api/entries/city': entry() });
+    await expect(getEntryByKey('city')).resolves.toEqual(entry());
+  });
+
+  test('searches when a numeric key resolves some other entry by id', async () => {
+    // /api/entries/42 is the entry with *id* 42, not the one keyed "42".
+    mockFetch({
+      '/api/entries/42': entry({ id: 42, key: 'city' }),
+      '/api/entries?search=42&per_page=200': {
+        entries: [entry({ id: 7, key: '42' }), entry({ id: 8, key: '420' })],
+        total: 2,
+      },
+    });
+    await expect(getEntryByKey('42')).resolves.toEqual(entry({ id: 7, key: '42' }));
+  });
+
+  test('searches when the key is not addressable as a path', async () => {
+    mockFetch({
+      '/api/entries?search=a%2Fb&per_page=200': { entries: [entry({ id: 3, key: 'a/b' })], total: 1 },
+    });
+    await expect(getEntryByKey('a/b')).resolves.toEqual(entry({ id: 3, key: 'a/b' }));
+  });
+
+  test('resolves to null when no entry has that key', async () => {
+    mockFetch({ '/api/entries?search=gone&per_page=200': { entries: [], total: 0 } });
+    await expect(getEntryByKey('gone')).resolves.toBeNull();
   });
 });
