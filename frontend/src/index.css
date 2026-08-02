@@ -1,6 +1,13 @@
 /* Design tokens. One palette for the whole GUI — App.css and every page pull
    from these, so a colour is changed in exactly one place. Matched to the
-   CountRoster app so the two self-hosted tools read as one family. */
+   CountRoster app so the two self-hosted tools read as one family.
+   ───────────────────────────────────────────────────────────────────────────
+   Theming: `data-theme` on <html> is always "light" or "dark", resolved from
+   the saved preference or, when that is "system", from the OS setting. The
+   inline script in index.html stamps it before the first paint (so a dark
+   system never flashes white) and src/theme.js keeps it in step afterwards.
+   Because the attribute is always present, the dark palette is declared once
+   here rather than duplicated across a media query and an override. */
 :root {
   --bg: #fafafa;
   --surface: #ffffff;
@@ -20,12 +27,28 @@
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
   --tab-bar-height: 4rem;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  /* Native form controls (checkbox, date picker, scrollbars) follow this. */
-  color-scheme: light dark;
+  /* Native form controls (checkbox, select, scrollbars) follow this. */
+  color-scheme: light;
 }
 
+:root[data-theme='dark'] {
+  --bg: #18181b;
+  --surface: #232327;
+  --surface-sunken: #1f1f23;
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --border: #3f3f46;
+  --accent: #4ecdc4;
+  --warn-bg: #422006;
+  --warn-ink: #fcd34d;
+  color-scheme: dark;
+}
+
+/* Belt and braces: if the stamping script never ran (an ancient browser, or
+   the bundle failing before theme.js), still follow the OS rather than
+   pinning everyone to light. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --bg: #18181b;
     --surface: #232327;
     --surface-sunken: #1f1f23;
@@ -35,6 +58,7 @@
     --accent: #4ecdc4;
     --warn-bg: #422006;
     --warn-ink: #fcd34d;
+    color-scheme: dark;
   }
 }
 

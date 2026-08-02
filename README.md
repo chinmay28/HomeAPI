@@ -68,8 +68,12 @@ make build
 
 - **Single binary** - frontend embedded at compile time, zero runtime dependencies
 - **REST API** - simple JSON API for scripts and automation (`curl`-friendly)
-- **Web GUI** - dashboard, entry management, search, and filtering; mobile-first,
-  with a bottom tab bar on phones and automatic light/dark theming
+- **Web GUI** - entry management, search, and filtering; mobile-first, with a
+  bottom tab bar on phones
+- **Customizable dashboard** - pick the stats you want on the home page
+- **Light / dark theme** - follows your system, or pin it in Settings
+- **JSON-friendly** - values keep the formatting you gave them, with one-click
+  reindenting
 - **Categories** - organize entries into groups (e.g. "watchlist", "config", "notes")
 - **Search** - full-text search across keys and values
 - **Import/Export** - backup and restore data as JSON
@@ -103,6 +107,11 @@ curl "http://localhost:9999/api/entries?category=watchlist"
 
 # Search
 curl "http://localhost:9999/api/entries?search=apple"
+
+# Read a value. `value` is parsed JSON; `value_text` is the stored string
+# exactly as written, indentation and all.
+curl -s http://localhost:9999/api/entries/location | jq '.value.lat'
+curl -s http://localhost:9999/api/entries/location | jq -r '.value_text'
 
 # Update
 curl -X PUT http://localhost:9999/api/entries/1 \

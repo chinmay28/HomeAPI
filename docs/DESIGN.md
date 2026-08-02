@@ -258,6 +258,13 @@ On input, the rules are symmetric:
 | `{"lat": 37.3}` (JSON object) | `{"lat": 37.3}` |
 | `["a","b"]` (JSON array) | `["a","b"]` |
 
+Responses also carry `value_text`: the stored string byte-for-byte, whitespace
+and key order included. `value` cannot serve that purpose — it is parsed JSON,
+and any client that decodes it (every browser does) has already lost the
+formatting the author typed. The GUI reads and edits from `value_text`, which is
+what keeps a hand-indented config from being reflowed by someone opening it and
+pressing Save. Additive field; `value` keeps its meaning and its shape.
+
 ### 4.3 Error Responses
 
 All errors follow a consistent format:
@@ -277,10 +284,16 @@ CORS is enabled for all origins in development. In production, the frontend is s
 
 ### 5.1 Pages
 
-1. **Dashboard** (`/`): Overview showing categories with entry counts
+1. **Dashboard** (`/`): user-selected featured stats over the category list
 2. **Entries List** (`/entries`): Filterable, searchable table of entries
 3. **Entry Detail** (`/entries/:id`): View/edit a single entry
-4. **Import/Export** (`/settings`): Import and export functionality
+4. **Settings** (`/settings`): appearance, import and export
+
+The dashboard's featured stats are ids in `localStorage`: the four data-free
+ones (`total`, `categories`, `server`, `largest`) plus `category:<name>` for a
+per-category count. Ids that can't be rendered — a category since emptied, an
+id from a newer build — are skipped rather than pruned, so a category that
+comes back brings its card back with it.
 
 ### 5.2 App shell
 
@@ -304,11 +317,25 @@ it.
 ### 5.3 Look and feel
 
 Design tokens (colours, radius, shadows) are CSS custom properties declared
-once in `index.css`, with a `prefers-color-scheme: dark` override — so the GUI
-follows the system theme without any JavaScript. The palette, radius, and
-header/tab-bar structure are shared with
-[CountRoster](https://github.com/chinmay28/CountRoster) so the two self-hosted
-tools read as one family.
+once in `index.css`. The palette, radius, and header/tab-bar structure are
+shared with [CountRoster](https://github.com/chinmay28/CountRoster) so the two
+self-hosted tools read as one family.
+
+**Theming.** `<html data-theme>` is always `light` or `dark`, resolved from the
+saved preference (`homeapi.theme`, default `system`) or, for `system`, from
+`prefers-color-scheme`. Because the attribute is always present, the dark
+palette is declared once rather than duplicated across a media query and an
+override. An inline script in `index.html` stamps it before the first paint so
+a dark machine never flashes white while the bundle loads; `src/theme.js` owns
+it afterwards and follows OS changes live while the preference is `system`. The
+preference is a module-level store, not component state — the control lives on
+the Settings page but every surface has to change with it, and a stale second
+copy would clobber the choice on the next OS flip.
+
+**Per-device preferences** (theme, featured dashboard stats) live in
+`localStorage`, never in the entries table: they are view settings for one
+browser, and storing them as entries would leak them into `/api/entries`, the
+category list, and every export.
 
 Mobile specifics: 44px minimum tap targets, 16px inputs (below that, iOS Safari
 zooms on focus), `env(safe-area-inset-*)` padding for notched devices, and

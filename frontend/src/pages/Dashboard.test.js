@@ -80,3 +80,106 @@ test('shows empty state when no entries exist', async () => {
 
   expect(await screen.findByText('No entries yet.')).toBeInTheDocument();
 });
+
+// ── Featured stats ───────────────────────────────────────────────────────────
+
+// The labels of the cards currently on the dashboard. Scoped to .stat-card
+// because the customize panel repeats every label as a checkbox, and the
+// "Categories" card shares its name with the category table's heading.
+function statLabels() {
+  return Array.from(document.querySelectorAll('.stat-card__label')).map(el => el.textContent);
+}
+
+function statCard(label) {
+  return Array.from(document.querySelectorAll('.stat-card'))
+    .find(card => card.querySelector('.stat-card__label')?.textContent === label);
+}
+
+describe('featured stats', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    api.healthCheck.mockResolvedValue({ status: 'ok', version: 'v1.0.17' });
+  });
+
+  test('shows the default three cards on a fresh browser', async () => {
+    api.listCategories.mockResolvedValue([{ name: 'watchlist', count: 4 }]);
+    renderDashboard();
+
+    await screen.findByRole('button', { name: 'Customize stats' });
+    expect(statLabels()).toEqual(['Total entries', 'Categories', 'Server']);
+  });
+
+  test('featuring a category adds its own card and persists the choice', async () => {
+    api.listCategories.mockResolvedValue([
+      { name: 'watchlist', count: 4 },
+      { name: 'notes', count: 2 },
+    ]);
+    renderDashboard();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Customize stats' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'notes (2)' }));
+
+    expect(statLabels()).toEqual(['Total entries', 'Categories', 'Server', 'notes']);
+    expect(statCard('notes').textContent).toContain('2');
+
+    expect(JSON.parse(window.localStorage.getItem('homeapi.featuredStats')))
+      .toEqual(['total', 'categories', 'server', 'category:notes']);
+  });
+
+  test('restores the saved selection on the next visit', async () => {
+    window.localStorage.setItem('homeapi.featuredStats', JSON.stringify(['largest']));
+    api.listCategories.mockResolvedValue([
+      { name: 'watchlist', count: 9 },
+      { name: 'notes', count: 2 },
+    ]);
+    renderDashboard();
+
+    await screen.findByRole('button', { name: 'Customize stats' });
+    expect(statLabels()).toEqual(['Largest category']);
+    // Largest wins on count, not on ordering.
+    expect(statCard('Largest category').textContent).toContain('watchlist');
+  });
+
+  test('unticking a stat removes its card', async () => {
+    api.listCategories.mockResolvedValue([{ name: 'watchlist', count: 4 }]);
+    renderDashboard();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Customize stats' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Total entries' }));
+
+    expect(statLabels()).toEqual(['Categories', 'Server']);
+  });
+
+  test('reset restores the defaults', async () => {
+    window.localStorage.setItem('homeapi.featuredStats', JSON.stringify(['largest']));
+    api.listCategories.mockResolvedValue([{ name: 'watchlist', count: 4 }]);
+    renderDashboard();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Customize stats' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Reset to default' }));
+
+    expect(statLabels()).toEqual(['Total entries', 'Categories', 'Server']);
+    expect(window.localStorage.getItem('homeapi.featuredStats')).toBeNull();
+  });
+
+  test('a stat for a category that no longer exists is skipped, not crashed on', async () => {
+    window.localStorage.setItem(
+      'homeapi.featuredStats',
+      JSON.stringify(['total', 'category:deleted']),
+    );
+    api.listCategories.mockResolvedValue([{ name: 'watchlist', count: 4 }]);
+    renderDashboard();
+
+    await screen.findByRole('button', { name: 'Customize stats' });
+    expect(statLabels()).toEqual(['Total entries']);
+  });
+
+  test('a corrupt preference falls back to the defaults', async () => {
+    window.localStorage.setItem('homeapi.featuredStats', 'not json');
+    api.listCategories.mockResolvedValue([{ name: 'watchlist', count: 4 }]);
+    renderDashboard();
+
+    await screen.findByRole('button', { name: 'Customize stats' });
+    expect(statLabels()).toEqual(['Total entries', 'Categories', 'Server']);
+  });
+});

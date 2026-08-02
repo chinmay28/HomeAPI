@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEntry, updateEntry, deleteEntry, displayValue, prettyValue, isStructuredValue } from '../api';
+import { getEntry, updateEntry, deleteEntry, isJSONText, readableValue, valueText } from '../api';
 import Notification from '../components/Notification';
+import ValueField from '../components/ValueField';
 
 function EntryDetail() {
   const { id } = useParams();
@@ -16,7 +17,9 @@ function EntryDetail() {
     getEntry(id)
       .then(e => {
         setEntry(e);
-        setForm({ category: e.category, key: e.key, value: displayValue(e.value) });
+        // Edit from the stored text, not the parsed value — otherwise opening
+        // and saving an entry would collapse hand-formatted JSON to one line.
+        setForm({ category: e.category, key: e.key, value: valueText(e) });
       })
       .catch(err => setNotification({ type: 'error', message: err.message }))
       .finally(() => setLoading(false));
@@ -71,13 +74,14 @@ function EntryDetail() {
               <label htmlFor="edit-key">Key</label>
               <input id="edit-key" value={form.key} onChange={e => setForm({...form, key: e.target.value})} required />
             </div>
-            <div className="form-group">
-              <label htmlFor="edit-value">Value</label>
-              <textarea id="edit-value" value={form.value} onChange={e => setForm({...form, value: e.target.value})} rows={6} />
-            </div>
+            <ValueField
+              id="edit-value"
+              value={form.value}
+              onChange={value => setForm({ ...form, value })}
+            />
             <div className="form-actions">
               <button type="submit" className="btn btn--primary">Save</button>
-              <button type="button" className="btn" onClick={() => { setEditing(false); setForm({ category: entry.category, key: entry.key, value: displayValue(entry.value) }); }}>Cancel</button>
+              <button type="button" className="btn" onClick={() => { setEditing(false); setForm({ category: entry.category, key: entry.key, value: valueText(entry) }); }}>Cancel</button>
             </div>
           </form>
         ) : (
@@ -96,9 +100,9 @@ function EntryDetail() {
             </div>
             <div className="detail-field">
               <div className="detail-field__label">
-                Value{isStructuredValue(entry.value) && <span className="value-badge">JSON</span>}
+                Value{isJSONText(valueText(entry)) && <span className="value-badge">JSON</span>}
               </div>
-              <pre className={`value-display${isStructuredValue(entry.value) ? ' value-json' : ''}`}>{prettyValue(entry.value) || <em className="muted">empty</em>}</pre>
+              <pre className={`value-display${isJSONText(valueText(entry)) ? ' value-json' : ''}`}>{readableValue(entry) || <em className="muted">empty</em>}</pre>
             </div>
             <div className="detail-field">
               <div className="detail-field__label">Created</div>

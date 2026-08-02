@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { listEntries, createEntry, deleteEntry, listCategories, displayValue } from '../api';
+import { listEntries, createEntry, deleteEntry, listCategories, previewValue } from '../api';
 import Notification from '../components/Notification';
+import ValueField from '../components/ValueField';
 
 function Entries() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -104,10 +105,13 @@ function Entries() {
                 <label htmlFor="new-key">Key *</label>
                 <input id="new-key" value={form.key} onChange={e => setForm({...form, key: e.target.value})} placeholder="e.g. AAPL" required />
               </div>
-              <div className="form-group">
-                <label htmlFor="new-value">Value</label>
-                <input id="new-value" value={form.value} onChange={e => setForm({...form, value: e.target.value})} placeholder="e.g. Apple Inc." />
-              </div>
+              <ValueField
+                id="new-value"
+                value={form.value}
+                onChange={value => setForm({ ...form, value })}
+                minRows={3}
+                placeholder={'e.g. Apple Inc.\nor {"ticker": "AAPL"}'}
+              />
             </div>
             <div className="form-actions">
               <button type="submit" className="btn btn--primary">Save</button>
@@ -154,7 +158,7 @@ function Entries() {
                     <tr key={entry.id}>
                       <td data-label="Category"><span className="badge">{entry.category}</span></td>
                       <td data-label="Key" className="cell-key"><Link to={`/entries/${entry.id}`}>{entry.key}</Link></td>
-                      <td data-label="Value" className="cell-value">{displayValue(entry.value)}</td>
+                      <td data-label="Value" className="cell-value">{previewValue(entry)}</td>
                       <td data-label="Updated" className="cell-meta">{new Date(entry.updated_at).toLocaleString()}</td>
                       <td className="cell-actions">
                         <button className="btn btn--danger btn--small" onClick={() => handleDelete(entry.id)}>Delete</button>

@@ -30,6 +30,56 @@ export function prettyValue(v) {
   return displayValue(v);
 }
 
+// ── Stored text ─────────────────────────────────────────────────────────────
+// `value` is parsed JSON by the time it reaches us, so the indentation and key
+// order someone typed are already gone. `value_text` carries the stored string
+// byte-for-byte; everything the GUI shows or edits comes from there so a save
+// never reflows JSON the author formatted by hand.
+
+// True when this text is a JSON object or array — matching the server's rule
+// for what gets embedded as-is rather than wrapped in a {data} envelope.
+export function isJSONText(text) {
+  const trimmed = (text || '').trim();
+  if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) return false;
+  try {
+    JSON.parse(trimmed);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Pretty-print JSON text with two-space indents, or null if it isn't JSON.
+export function formatJSONText(text) {
+  if (!isJSONText(text)) return null;
+  return JSON.stringify(JSON.parse(text), null, 2);
+}
+
+// The entry's value exactly as stored. Falls back to the parsed value for a
+// server too old to send value_text.
+export function valueText(entry) {
+  if (typeof entry?.value_text === 'string') return entry.value_text;
+  return prettyValue(entry?.value);
+}
+
+// The value as it should be read on screen: text the author already formatted
+// is shown as they wrote it; JSON that arrived on one line (from a curl script,
+// say) is pretty-printed, since nobody wants to read that as a single line.
+export function readableValue(entry) {
+  const text = valueText(entry);
+  if (isJSONText(text) && !text.includes('\n')) return formatJSONText(text);
+  return text;
+}
+
+// A one-line preview for table cells, where a multi-line value would blow up
+// the row height.
+export function previewValue(entry) {
+  if (typeof entry?.value_text === 'string') {
+    return entry.value_text.replace(/\s+/g, ' ').trim();
+  }
+  return displayValue(entry?.value);
+}
+
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options.headers },

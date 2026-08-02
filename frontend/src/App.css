@@ -450,9 +450,41 @@ textarea:focus {
   color: var(--muted);
 }
 
+/* Label on the left, an optional inline action (e.g. "Format JSON") hard right. */
+.form-group__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 1.6rem;
+  margin-bottom: 0.3rem;
+}
+.form-group__head label {
+  margin-bottom: 0;
+}
+
+/* The value editor. Monospace throughout: values are data, and lining up JSON
+   is worth more here than prose-friendly proportional text. */
+.value-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  tab-size: 2;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}
+
 .form-actions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* A row of mutually exclusive choices (theme), joined into one control. */
+.segmented {
+  display: inline-flex;
+  gap: 0.35rem;
   flex-wrap: wrap;
 }
 
@@ -506,6 +538,43 @@ textarea:focus {
   font-variant-numeric: tabular-nums;
   font-size: 0.72rem;
   color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* Picker for which stats the dashboard features. */
+.stat-picker {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.85rem 0.85rem;
+  margin-bottom: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+.stat-picker__legend {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding: 0 0.35rem;
+}
+.stat-picker__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  /* Comfortable to hit with a thumb without turning the list into a column. */
+  min-height: 2.25rem;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.stat-picker__option input {
+  width: 1.05rem;
+  height: 1.05rem;
+  min-height: 0;
+  flex: none;
+  accent-color: var(--primary);
+  cursor: pointer;
 }
 
 /* ── Badges & values ────────────────────────────────────────────────────── */

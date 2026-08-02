@@ -12,8 +12,17 @@ jest.mock('../api', () => ({
   deleteEntry: jest.fn(),
 }));
 
+// Mirrors what the server stores for a given parsed value; see value_text.
+function storedTextFor(value) {
+  if (value && typeof value === 'object' && !Array.isArray(value)
+      && Object.keys(value).length === 1 && 'data' in value) {
+    return String(value.data);
+  }
+  return JSON.stringify(value);
+}
+
 function makeEntry(overrides) {
-  return {
+  const entry = {
     id: 1,
     category: 'default',
     key: 'city',
@@ -22,6 +31,8 @@ function makeEntry(overrides) {
     updated_at: '2024-01-01T00:00:00Z',
     ...overrides,
   };
+  if (entry.value_text === undefined) entry.value_text = storedTextFor(entry.value);
+  return entry;
 }
 
 function mockList(entries = []) {

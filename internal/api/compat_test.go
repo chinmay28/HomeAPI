@@ -200,9 +200,9 @@ func TestNumericIDLookupNeverBreaks(t *testing.T) {
 // produces the same result, for all supported value types.
 func TestValueRoundTrip(t *testing.T) {
 	tests := []struct {
-		name         string
-		inputJSON    string // value as sent in POST body (raw JSON)
-		wantExtract  func(raw json.RawMessage) (string, bool)
+		name        string
+		inputJSON   string // value as sent in POST body (raw JSON)
+		wantExtract func(raw json.RawMessage) (string, bool)
 	}{
 		{
 			name:      "plain string round trip",
@@ -249,5 +249,83 @@ func TestValueRoundTrip(t *testing.T) {
 			}
 			_ = got // value was extracted successfully — structure is correct
 		})
+	}
+}
+
+// TestValueTextPreservesFormatting covers the additive `value_text` field: it
+// carries the stored string byte-for-byte, which is the only way a client that
+// JSON-decodes the response can recover the author's indentation. The GUI edits
+// from this field so saving an entry never reflows the JSON someone wrote.
+func TestValueTextPreservesFormatting(t *testing.T) {
+	pretty := "{\n  \"lat\": 37.3,\n  \"city\": \"San Jose\"\n}"
+
+	tests := []struct {
+		name  string
+		value string // the value as a JSON string in the request body
+		want  string // expected value_text
+	}{
+		{"indented json survives verbatim", pretty, pretty},
+		{"compact json is not reflowed", `{"lat":37.3}`, `{"lat":37.3}`},
+		{"plain text is unwrapped", "San Jose", "San Jose"},
+		{"empty value", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := newTestHandler(t)
+
+			valueJSON, _ := json.Marshal(tt.value)
+			reqBody := []byte(`{"category":"test","key":"k","value":` + string(valueJSON) + `}`)
+			req := httptest.NewRequest("POST", "/api/entries", bytes.NewReader(reqBody))
+			w := httptest.NewRecorder()
+			h.CreateEntry(w, req)
+			if w.Code != 201 {
+				t.Fatalf("create: %d — %s", w.Code, w.Body.String())
+			}
+
+			var created entryResponse
+			json.NewDecoder(w.Body).Decode(&created)
+			if created.ValueText != tt.want {
+				t.Errorf("POST value_text = %q, want %q", created.ValueText, tt.want)
+			}
+
+			// The same text has to come back on a later read, not just in the
+			// response the writer happened to get.
+			req = httptest.NewRequest("GET", "/api/entries/k", nil)
+			w = httptest.NewRecorder()
+			h.GetEntry(w, req)
+
+			var fetched entryResponse
+			json.NewDecoder(w.Body).Decode(&fetched)
+			if fetched.ValueText != tt.want {
+				t.Errorf("GET value_text = %q, want %q", fetched.ValueText, tt.want)
+			}
+		})
+	}
+}
+
+// The new field must not disturb the old one: `value` is still parsed JSON with
+// the documented envelope, whatever whitespace the stored text carries.
+func TestValueTextDoesNotChangeValueEncoding(t *testing.T) {
+	h := newTestHandler(t)
+
+	valueJSON, _ := json.Marshal("{\n  \"lat\": 37.3\n}")
+	reqBody := []byte(`{"category":"test","key":"loc","value":` + string(valueJSON) + `}`)
+	req := httptest.NewRequest("POST", "/api/entries", bytes.NewReader(reqBody))
+	w := httptest.NewRecorder()
+	h.CreateEntry(w, req)
+	if w.Code != 201 {
+		t.Fatalf("create: %d — %s", w.Code, w.Body.String())
+	}
+
+	var resp entryResponse
+	json.NewDecoder(w.Body).Decode(&resp)
+
+	var obj map[string]float64
+	if err := json.Unmarshal(resp.Value, &obj); err != nil {
+		t.Fatalf("value is not a JSON object: %s", resp.Value)
+	}
+	if obj["lat"] != 37.3 {
+		t.Errorf("value.lat = %v, want 37.3", obj["lat"])
 	}
 }

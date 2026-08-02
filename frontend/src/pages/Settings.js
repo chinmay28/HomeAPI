@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
 import { exportData, importData } from '../api';
 import Notification from '../components/Notification';
+import { useTheme } from '../theme';
+
+const THEME_OPTIONS = [
+  { id: 'system', label: 'System' },
+  { id: 'light', label: 'Light' },
+  { id: 'dark', label: 'Dark' },
+];
 
 function Settings() {
+  const { theme, setTheme, resolved } = useTheme();
   const [notification, setNotification] = useState(null);
   const [importMode, setImportMode] = useState('merge');
   const [importFile, setImportFile] = useState(null);
@@ -49,6 +57,29 @@ function Settings() {
     <>
       <Notification notification={notification} onClear={() => setNotification(null)} />
       <h1 className="page-title">Settings</h1>
+
+      <div className="card">
+        <h2 className="card__title">Appearance</h2>
+        <p className="card__hint">
+          Saved in this browser.{' '}
+          {theme === 'system'
+            ? `Following your system, which is currently ${resolved}.`
+            : `Pinned to ${theme}, ignoring your system setting.`}
+        </p>
+        <div className="segmented" role="group" aria-label="Theme">
+          {THEME_OPTIONS.map(option => (
+            <button
+              key={option.id}
+              type="button"
+              className={`btn btn--small${theme === option.id ? ' btn--active' : ''}`}
+              aria-pressed={theme === option.id}
+              onClick={() => setTheme(option.id)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="card">
         <h2 className="card__title">Export Data</h2>

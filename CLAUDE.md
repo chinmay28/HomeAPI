@@ -61,6 +61,11 @@ The `value` field behaves differently on input vs output:
 - If the stored string is a valid JSON object or array, it is embedded as-is.
 - Otherwise it is wrapped: `{"data": "stored string"}`.
 
+**API response** — `value_text` is the stored string byte-for-byte (whitespace,
+indentation, key order). `value` is parsed JSON, so any client that decodes it
+has already lost the author's formatting; the GUI reads and edits from
+`value_text` so opening and saving an entry never reflows it. Additive field.
+
 **API input** (POST/PUT) — `value` accepts any JSON type:
 - A JSON string `"San Jose"` is unwrapped and stored as the plain text `San Jose`.
 - A JSON object or array `{"lat": 37.3}` is serialized and stored as the JSON string `{"lat": 37.3}`.
@@ -85,7 +90,11 @@ separate `version` field and stays at `"1"`.
 - Go: standard `gofmt` formatting, error wrapping with `fmt.Errorf("context: %w", err)`
 - React: functional components with hooks, no class components
 - CSS: design tokens as custom properties in `index.css`; no inline `style` props
-  for anything a class can express, and no colour literals outside the tokens
+  for anything a class can express, and no colour literals outside the tokens.
+  Dark mode is `:root[data-theme='dark']` — declare each token once, there.
+- Per-device UI preferences (theme, featured stats) go in `localStorage`, never
+  in the entries table: entries are the user's data and show up in
+  `/api/entries`, the category list, and every export.
 - Tests: table-driven tests in Go, descriptive test names
 
 ## Backward Compatibility — IMPORTANT

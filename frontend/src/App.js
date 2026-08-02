@@ -27,9 +27,11 @@ function App() {
   const keyboardOpen = useKeyboardOpen();
   // The FAB *is* the "new entry" action — it opens the create form on the
   // entries list by way of ?new=1 — so it steps aside once that form is up.
+  // Settings is the other exception: nobody creates an entry from there, and
+  // the button would only sit on top of the import/export controls.
   const formOpen = location.pathname === '/entries'
     && new URLSearchParams(location.search).get('new') === '1';
-  const showFab = !formOpen;
+  const showFab = !formOpen && location.pathname !== '/settings';
   // Tapping the developer mark throws the badge up full screen for a beat.
   const [devFlash, setDevFlash] = useState(false);
 

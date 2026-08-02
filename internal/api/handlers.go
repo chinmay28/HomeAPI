@@ -36,12 +36,18 @@ func NewHandler(store *db.Store) *Handler {
 // Value is always a JSON value: objects/arrays are embedded as-is;
 // plain strings are wrapped as {"data": "..."}.
 type entryResponse struct {
-	ID        int64           `json:"id"`
-	Category  string          `json:"category"`
-	Key       string          `json:"key"`
-	Value     json.RawMessage `json:"value"`
-	CreatedAt time.Time       `json:"created_at"`
-	UpdatedAt time.Time       `json:"updated_at"`
+	ID       int64           `json:"id"`
+	Category string          `json:"category"`
+	Key      string          `json:"key"`
+	Value    json.RawMessage `json:"value"`
+	// ValueText is the stored string exactly as it sits in the database —
+	// whitespace, indentation and key order included. `value` cannot carry
+	// that: it is parsed JSON, and any client that decodes it (every browser
+	// does) loses the formatting the author typed. Additive field; `value`
+	// keeps its meaning and shape.
+	ValueText string    `json:"value_text"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // valueToRaw converts a stored string value to its JSON representation.
@@ -75,6 +81,7 @@ func toEntryResponse(e *models.Entry) entryResponse {
 		Category:  e.Category,
 		Key:       e.Key,
 		Value:     valueToRaw(e.Value),
+		ValueText: e.Value,
 		CreatedAt: e.CreatedAt,
 		UpdatedAt: e.UpdatedAt,
 	}
