@@ -818,15 +818,19 @@ tbody tr:hover {
 
   /* App-shell layout. The shell is the full screen, with the tab bar as an
      in-flow flex child at its bottom and `.app__main` scrolling inside it.
-     Height comes from the *large* viewport unit (lvh): dvh and
-     window.innerHeight under-report at rest on some mobile browsers and only
-     jump to the true value after an interaction, which would leave the tab bar
-     floating above the real bottom. lvh is the full screen and stays stable
-     across keyboard show/dismiss, so the bar sits flush with no JS. */
+     Height comes from the *small* viewport unit (svh): the visible area with
+     the browser's toolbars showing, which is what the reader actually has.
+     lvh — the screen with the toolbars hidden — is taller than that at rest,
+     which pushed the bottom of the shell under the toolbar and cut the tab bar
+     in half, and left the document itself scrollable by the difference so the
+     sticky header could drift up out of view. svh doesn't move: nothing here
+     scrolls the document (the pane scrolls internally), so the toolbars never
+     collapse and there is no larger state to track. In a standalone/home-screen
+     app, where there are no toolbars, svh is the full screen as before. */
   .app {
     position: relative;
-    height: 100vh; /* fallback for engines without the large-viewport unit */
-    height: 100lvh;
+    height: 100vh; /* fallback for engines without the small-viewport unit */
+    height: 100svh;
     min-height: 0;
     overflow: hidden;
     padding-left: max(0.75rem, env(safe-area-inset-left));
