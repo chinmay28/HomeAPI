@@ -234,8 +234,8 @@ Content-Type: application/json
 ```
 GET /api/health
 ```
-- Returns 200 with `{"status": "ok", "version": "v1.0.311"}`
-- `version` is the application version, `vMAJOR.MINOR.PATCH` where the patch
+- Returns 200 with `{"status": "ok", "version": "v2026.8.311"}`
+- `version` is the application version, `vYEAR.MONTH.PATCH` where the patch
   number is the repository's commit count (see §6.3). It is unrelated to the
   export/import format `version`, which is its own field and stays at `"1"`.
 
@@ -377,12 +377,19 @@ The Makefile orchestrates this into a single `make build` command.
 
 ### 6.3 Versioning
 
-The scheme is `vMAJOR.MINOR.PATCH`, where the patch number is the repository's
-commit count — every commit is a patch release, so `v1.0.311` is the 311th
-commit on the 1.0 line.
+The scheme is `vYEAR.MONTH.PATCH`, a calendar version where the patch number is
+the repository's commit count — every commit is a patch release, so `v2026.8.311`
+is the 311th commit on the 2026.8 line. The leading numbers say *when* a release
+line opened, not what it promises about compatibility; that promise is
+unconditional here (§ backward compatibility), and the export/import format has
+its own `version` field for the one change a number would have to describe.
 
-- `MAJOR`/`MINOR` are Go source constants in `internal/version/version.go`,
-  bumped by hand. That file is the single declaration of them in the tree.
+- `YEAR`/`MONTH` are Go source constants in `internal/version/version.go`,
+  bumped by hand when a line opens. That file is the single declaration of them
+  in the tree. They are deliberately not read from the build clock, which would
+  move the version without a commit.
+- The month is not zero-padded (`v2026.8.311`, not `v2026.08.311`): semver
+  forbids a leading zero, so an unpadded month keeps the string parseable.
 - `PATCH` only exists at build time (`git rev-list --count HEAD`). The Go
   binary gets it stamped in via `-ldflags -X`; the web bundle gets it inlined
   by Create React App from `REACT_APP_VERSION`.

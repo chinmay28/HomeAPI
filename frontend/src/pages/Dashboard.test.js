@@ -108,7 +108,7 @@ function statCard(label) {
 describe('featured stats', () => {
   beforeEach(() => {
     window.localStorage.clear();
-    api.healthCheck.mockResolvedValue({ status: 'ok', version: 'v1.0.17' });
+    api.healthCheck.mockResolvedValue({ status: 'ok', version: 'v2026.8.17' });
   });
 
   test('shows the default three cards on a fresh browser', async () => {
@@ -207,7 +207,7 @@ describe('featured entry values', () => {
 
   beforeEach(() => {
     window.localStorage.clear();
-    api.healthCheck.mockResolvedValue({ status: 'ok', version: 'v1.0.17' });
+    api.healthCheck.mockResolvedValue({ status: 'ok', version: 'v2026.8.17' });
     api.listCategories.mockResolvedValue([{ name: 'minion', count: 3 }]);
   });
 

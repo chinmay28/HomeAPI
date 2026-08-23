@@ -15,7 +15,7 @@ import (
 	"github.com/chinmay28/homeapi/internal/version"
 )
 
-// Version is what /api/health reports, `vMAJOR.MINOR.<commit count>` — the one
+// Version is what /api/health reports, `vYEAR.MONTH.<commit count>` — the one
 // rendering lives in internal/version so the binary, the CLI and the web GUI
 // header can never disagree. Not a constant: the patch number is stamped in at
 // link time. This is the *application* version and is unrelated to the
