@@ -254,10 +254,10 @@ curl http://localhost:9999/api/health
 ```
 
 ```json
-{"status": "ok", "version": "v1.0.311"}
+{"status": "ok", "version": "v2026.8.311"}
 ```
 
-`version` is the running build, `vMAJOR.MINOR.PATCH` — the patch number is the
+`version` is the running build, `vYEAR.MONTH.PATCH` — the patch number is the
 repository's commit count. `./homeapi --version` prints the same string.
 
 ## Working with JSON Values

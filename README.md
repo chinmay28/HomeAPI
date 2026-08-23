@@ -176,10 +176,18 @@ make clean
 
 ## Versioning
 
-`vMAJOR.MINOR.PATCH`, where the patch number is the repository's commit count —
-every commit is a patch release, so `v1.0.311` is the 311th commit on the 1.0
-line. Major and minor are bumped by hand in `internal/version/version.go`; the
-patch number is stamped in at build time by `make build`.
+`vYEAR.MONTH.PATCH` — a calendar version, where the patch number is the
+repository's commit count — every commit is a patch release, so `v2026.8.311` is
+the 311th commit on the 2026.8 line. There is no semantic major/minor: the
+leading numbers say *when* a release line opened, not what it promises about
+compatibility, and HomeAPI's compatibility promise is unconditional (see the
+backward-compatibility rules) rather than something a number could describe.
+
+`Year` and `Month` are bumped by hand in `internal/version/version.go` — not
+read from the build clock, so rebuilding an old tree still reports what it
+originally shipped. The month is not zero-padded (`v2026.8.311`, not
+`v2026.08.311`), because semver forbids a leading zero. The patch number is
+stamped in at build time by `make build`.
 
 The same number appears in the GUI header, in `./homeapi --version`, and in
 `GET /api/health`, because all three come from `scripts/version.mjs`.

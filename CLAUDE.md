@@ -29,7 +29,7 @@ internal/api/        - HTTP handlers and router
 internal/db/         - Database access layer
 internal/models/     - Data models
 internal/middleware/  - HTTP middleware (CORS, logging, auth)
-internal/version/    - Application version (Major/Minor constants, stamped Patch)
+internal/version/    - Application version (Year/Month constants, stamped Patch)
 frontend/            - React application
 scripts/version.mjs  - Assembles the version for the Go and web builds
 docs/                - Design document and user guide
@@ -75,10 +75,11 @@ has already lost the author's formatting; the GUI reads and edits from
 resolved as IDs first; non-numeric segments are resolved as keys.
 
 ## Versioning
-`vMAJOR.MINOR.PATCH`, where PATCH is the repository's commit count — every commit
-is a patch release. Major/minor are Go source constants in
-`internal/version/version.go` (bump by hand); the patch number is stamped at
-build time. `scripts/version.mjs` is the one place it is assembled, and both the
+`vYEAR.MONTH.PATCH` — a calendar version, where PATCH is the repository's commit
+count, so every commit is a patch release. Year/month are Go source constants in
+`internal/version/version.go` (bump by hand when a release line opens, never
+from the build clock); the patch number is stamped at build time. The month is
+not zero-padded, which keeps the string valid semver. `scripts/version.mjs` is the one place it is assembled, and both the
 Go binary (`-ldflags -X`) and the web bundle (`REACT_APP_VERSION`) read from it,
 so the GUI header, `--version`, and `/api/health` always agree. A build without
 git reports patch `0`.

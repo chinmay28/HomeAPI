@@ -76,7 +76,7 @@ chmod 750 "$DATA_DIR"
 
 # The build stamps the binary's patch number from `git rev-list --count HEAD`,
 # so the clone has to carry the whole commit graph — a --depth 1 clone would
-# answer "1" and ship a build calling itself v1.0.1. `--filter=blob:none` keeps
+# answer "1" and ship a build calling itself v2026.8.1. `--filter=blob:none` keeps
 # it cheap: full history, file contents fetched only as needed.
 if [ -d "$SRC_DIR/.git" ]; then
     info "Updating source in $SRC_DIR (ref: $REF)..."
