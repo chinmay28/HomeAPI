@@ -14,6 +14,10 @@ set -euo pipefail
 #
 #   curl -fsSL https://raw.githubusercontent.com/chinmay28/homeapi/main/scripts/quickstart.sh | sudo bash
 #
+# Uninstall (removes the service, unit and install dir; keeps your data):
+#
+#   curl -fsSL https://raw.githubusercontent.com/chinmay28/homeapi/main/scripts/quickstart.sh | sudo bash -s -- --uninstall
+#
 # Configurable via environment variables (all optional):
 #
 #   HOMEAPI_REF       Git branch/tag/commit to deploy        (default: main)
@@ -22,6 +26,8 @@ set -euo pipefail
 #   HOMEAPI_PREFIX    Install dir for source + binary        (default: /opt/homeapi)
 #   HOMEAPI_DATA_DIR  Persistent data dir (DB + backups)     (default: /var/lib/homeapi)
 #   HOMEAPI_REPO      Git repo URL                           (default: github.com/chinmay28/homeapi)
+#
+# An uninstall reads the same variables, so pass the ones the install used.
 
 REPO="${HOMEAPI_REPO:-https://github.com/chinmay28/homeapi.git}"
 REF="${HOMEAPI_REF:-main}"
@@ -45,6 +51,40 @@ error() { echo -e "${RED}[ERROR]${NC} $*" >&2; exit 1; }
 # --- Preconditions -----------------------------------------------------------
 
 [ "$(id -u)" -eq 0 ] || error "Please run as root (e.g. pipe to 'sudo bash')."
+
+case "${1:-}" in
+    --uninstall) UNINSTALL=true ;;
+    "")          UNINSTALL=false ;;
+    *)           error "Unknown option: $1 (only --uninstall is supported)" ;;
+esac
+
+# --- Uninstall ---------------------------------------------------------------
+
+# Undo exactly what an install put down and nothing more. The data dir is
+# kept: it is the user's data, and the backups beside it are the only way
+# back from an uninstall they regret. The install dir is emptied file by
+# file rather than removed wholesale because HOMEAPI_DATA_DIR may have been
+# pointed inside HOMEAPI_PREFIX, and an `rm -rf $PREFIX` would take the
+# database with it. The build prerequisites (Go, Node, GCC) stay too — they
+# are ordinary system packages other things may be using.
+if [ "$UNINSTALL" = true ]; then
+    info "Stopping and removing the $SERVICE_NAME service..."
+    systemctl disable --now "$SERVICE_NAME" >/dev/null 2>&1 || true
+    rm -f "$UNIT_PATH"
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    systemctl reset-failed "$SERVICE_NAME" >/dev/null 2>&1 || true
+
+    info "Removing $PREFIX..."
+    rm -rf "$SRC_DIR"
+    rm -f "$BIN_PATH" "$PREFIX/homeapi.prev" "$PREFIX/homeapi.new"
+    rmdir "$PREFIX" 2>/dev/null || true
+
+    echo ""
+    info "Removed. Your data is still at $DATA_DIR (database and backups)."
+    info "Delete it with: sudo rm -rf $DATA_DIR && sudo userdel $SVC_USER"
+    exit 0
+fi
+
 command -v systemctl >/dev/null 2>&1 || error "systemd (systemctl) is required but not found."
 command -v git >/dev/null 2>&1 || error "git is required but not found. Install git and re-run."
 
