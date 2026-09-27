@@ -26,6 +26,8 @@ existing install:
 - swaps the binary atomically and **automatically rolls back** to the previous
   version if the new one fails its health check.
 
+The same command with `--uninstall` removes it again (see below).
+
 ```bash
 # Common operations after install
 systemctl status homeapi          # service status
