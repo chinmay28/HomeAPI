@@ -47,6 +47,19 @@ curl -fsSL https://raw.githubusercontent.com/chinmay28/homeapi/main/scripts/quic
 | `HOMEAPI_PREFIX` | `/opt/homeapi` | Install dir for source + binary |
 | `HOMEAPI_DATA_DIR` | `/var/lib/homeapi` | Persistent data dir (DB + backups) |
 
+To uninstall, run the same command with `--uninstall`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/chinmay28/homeapi/main/scripts/quickstart.sh | sudo bash -s -- --uninstall
+```
+
+This stops and disables the service and removes its unit file and the install
+directory (`/opt/homeapi`: source and binaries). Your data directory
+(`/var/lib/homeapi`: database and backups) and the `homeapi` user are kept; the
+command prints how to delete them. If you installed with any of the variables
+above, pass the same ones to the uninstall. Build prerequisites (Go, Node.js,
+GCC) are left in place.
+
 A reference unit file is available at [`deploy/homeapi.service`](deploy/homeapi.service).
 
 ## Build From Source
