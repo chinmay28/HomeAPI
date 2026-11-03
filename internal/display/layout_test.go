@@ -256,15 +256,34 @@ func TestRender_Degraded(t *testing.T) {
 		}
 	})
 
-	t.Run("missing params shows Cfg?", func(t *testing.T) {
+	t.Run("missing params still shows the sum", func(t *testing.T) {
 		in := fixtureInputs()
 		in.ConfigInvalid = true
+		f := mustRender(t, DefaultConfig(), in, fixtureNow)
+		if !pixelTextAt(f, sideMargin, footerTextY, "42", false, false) {
+			t.Error("footer left should read the minion-sum value \"42\"")
+		}
+		if findPixelText(f, footerTextY, "Cfg?", false, false) >= 0 {
+			t.Error("Cfg? must give way to the sum when there is one")
+		}
+	})
+
+	t.Run("missing params and no sum shows Cfg?", func(t *testing.T) {
+		in := fixtureInputs()
+		in.ConfigInvalid = true
+		in.Sum = ""
 		f := mustRender(t, DefaultConfig(), in, fixtureNow)
 		if !pixelTextAt(f, sideMargin, footerTextY, "Cfg?", false, false) {
 			t.Error("footer left should read \"Cfg?\"")
 		}
-		if findPixelText(f, footerTextY, "42", false, false) >= 0 {
-			t.Error("the sum must not be drawn when the config is invalid")
+	})
+
+	t.Run("valid params and no sum shows nothing", func(t *testing.T) {
+		in := fixtureInputs()
+		in.Sum = ""
+		f := mustRender(t, DefaultConfig(), in, fixtureNow)
+		if findPixelText(f, footerTextY, "Cfg?", false, false) >= 0 {
+			t.Error("Cfg? must not appear when the config is valid")
 		}
 	})
 

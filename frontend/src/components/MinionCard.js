@@ -92,8 +92,8 @@ function MinionCard() {
       </dl>
       {!params && (
         <p className="card__hint minion-card__hint">
-          No <code>{MINION_PARAMS_KEY}</code> entry yet — the panel is showing the built-in layout and says
-          “Cfg?” in the corner until you create one.
+          No <code>{MINION_PARAMS_KEY}</code> entry yet — the panel is showing the built-in layout until you
+          create one. The corner shows <code>minion-sum</code>, or “Cfg?” if that entry is missing too.
         </p>
       )}
     </div>

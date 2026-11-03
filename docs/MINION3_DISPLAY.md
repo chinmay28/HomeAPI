@@ -166,7 +166,7 @@ Rules:
 - Slots are fixed: there are exactly four tiles and three ratio positions. A slot whose object is missing renders empty (tile outline stays; the ratio strip closes the gap). An unknown top-level key is ignored.
 - The non-slot objects (`clock`, `wake`, `schedule`, `pills`, `stale`) fall back field by field to the defaults above when a configuration leaves them out — except `schedule.wake_times`, which is empty (⇒ sleep 12 h) unless you set it.
 - Any slot whose `key` is absent from `minion-quotes` shows `N/A` in its number position and no pill. A price that is not a number is printed as-is behind the prefix.
-- Invalid JSON, a missing `minion-params` entry, or a configuration that fails validation (a zone that does not load, a wake time that is not `HH:MM`, `decimals` outside 0–8, a negative threshold) ⇒ the built-in default above, and `sum` shows `Cfg?` so the problem is visible on the panel. The reason is in the server log.
+- Invalid JSON, a missing `minion-params` entry, or a configuration that fails validation (a zone that does not load, a wake time that is not `HH:MM`, `decimals` outside 0–8, a negative threshold) ⇒ the built-in default above. The default still points `sum` at `minion-sum`, so the sum keeps showing; only when that entry is missing or empty does the slot show `Cfg?` instead, so the problem is visible on the panel. The reason is in the server log.
 - `minion-params` is an ordinary entry: edit it in the GUI, it rides along in `/api/export`, and `GET /api/displays/minion3/frame.png` shows the result immediately — no restart, no cache.
 
 ### 3.2 Change pills
@@ -256,7 +256,7 @@ possible and what the `?at=` parameter leans on. Nothing in the package touches 
 
 ### 5.2 Handler flow (`frame.bin`)
 
-1. Parse `at`, `wake` (`400` on garbage). Load `minion-params` (default + `Cfg?` on miss/invalid), `minion-quotes`, the entry named by `sum.key`, `minion3-prev-quotes`.
+1. Parse `at`, `wake` (`400` on garbage). Load `minion-params` (default on miss/invalid; the footer shows `Cfg?` only if the sum is empty too), `minion-quotes`, the entry named by `sum.key`, `minion3-prev-quotes`.
 2. `display.Render(...)` → frame. `display.NextWake(...)` → sleep seconds and next wake.
 3. ETag = first 16 hex of SHA-256 of the native bytes. If `If-None-Match` matches (strong or weak, any list member, or `*`) → `304` with all `X-Minion-*` headers, no body.
 4. Else `200` with body.
@@ -288,7 +288,7 @@ and a link to the `minion-params` entry. One `<img>` and two fields from `minion
 | --- | --- | --- |
 | `TestRender_Golden` | unit, `internal/display` | `Render(defaultCfg, fixtureInputs, fixedNow)` equals `testdata/golden.pbm` byte-for-byte. Regenerate with `-update`. |
 | `TestRender_MatchesReferenceLayout` | unit | the fixed furniture sits where it does on the reference rendering: label, aux, ratio and footer x positions, tile outlines |
-| `TestRender_Degraded` | unit | missing symbol → `N/A`, no pill; stale → `Stale nh`; missing params → `Cfg?`; empty slot → blank; zero denominator → `N/A`; never returns an error for bad data |
+| `TestRender_Degraded` | unit | missing symbol → `N/A`, no pill; stale → `Stale nh`; missing params → the sum, or `Cfg?` without one; empty slot → blank; zero denominator → `N/A`; never returns an error for bad data |
 | `TestParams_Slots` | unit, table-driven | each slot's parameters land in its region and nowhere else (label, prefix, decimals, aux morning/evening, ratio default label, sum verbatim, wake label, clock zone) |
 | `TestFrame_Native` | unit | a frame with one black pixel at landscape (x, y) sets exactly bit `native_x=y, native_y=249−x`; padding bits are 1; length 4000 |
 | `TestPill_Thresholds` | unit, table-driven | +0.04 % → none, +0.05 % → filled, −0.05 % → outlined, no prev → none; rendered pill geometry |
@@ -304,7 +304,7 @@ Golden files live in `internal/display/testdata/`; the PBM is human-viewable in 
 ## 7. Rollout
 
 1. Land this feature behind nothing — the endpoints are additive and inert until a device calls them.
-2. Create `minion-params` through the GUI (or let the default stand; the panel then says `Cfg?` in the sum slot until you do).
+2. Create `minion-params` through the GUI (or let the default stand; the panel then shows `minion-sum` in the sum slot, or `Cfg?` when there is no such entry, until you do).
 3. Point the firmware at `/api/displays/minion3/frame.bin`. The old `minion-quotes` pipeline keeps feeding both the old Pi device and the new one for as long as both exist.
 4. Retire `minion-render` once the Pi is decommissioned.
 

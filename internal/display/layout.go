@@ -295,13 +295,15 @@ func drawRatios(f *Frame, cfg Config, in Inputs) {
 func drawFooter(f *Frame, cfg Config, in Inputs, local time.Time) {
 	f.FillRect(0, footerTop, Width-1, Height-1, true)
 
-	// Left: the sum (or the config warning), bare text.
+	// Left: the sum, bare text. With the built-in fallback config the sum
+	// slot still points at minion-sum, so a missing or broken minion-params
+	// only shows "Cfg?" when there is no sum to show in its place.
 	sum := ""
-	switch {
-	case in.ConfigInvalid:
-		sum = "Cfg?"
-	case cfg.Sum != nil:
+	if cfg.Sum != nil {
 		sum = firstLine(in.Sum, sumMaxRunes)
+	}
+	if sum == "" && in.ConfigInvalid {
+		sum = "Cfg?"
 	}
 	spanStart := sideMargin
 	if sum != "" {
