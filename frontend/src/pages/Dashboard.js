@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getEntryByKey, listCategories, listEntries, healthCheck, previewValue } from '../api';
+import MinionCard from '../components/MinionCard';
 import {
   CORE_STATS,
   DEFAULT_FEATURED_STATS,
@@ -328,6 +329,8 @@ function Dashboard() {
           </div>
         )
       )}
+
+      <MinionCard />
 
       <div className="card">
         <h2 className="card__title">Categories</h2>

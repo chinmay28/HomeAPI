@@ -29,6 +29,7 @@ internal/api/        - HTTP handlers and router
 internal/db/         - Database access layer
 internal/models/     - Data models
 internal/middleware/  - HTTP middleware (CORS, logging, auth)
+internal/display/    - Minion 3 e-paper frame renderer: pure, deterministic, golden-tested (docs/MINION3_DISPLAY.md)
 internal/version/    - Application version (Year/Month constants, stamped Patch)
 frontend/            - React application
 scripts/version.mjs  - Assembles the version for the Go and web builds
@@ -53,6 +54,8 @@ The `value` is stored as plain text in the database regardless of content.
 - `GET    /api/export`                - Export all data as JSON
 - `POST   /api/import`                - Import data from JSON
 - `GET    /api/health`                - Health check
+- `GET    /api/displays/minion3/frame.bin` - Minion 3 e-paper frame, 4000 bytes panel-native (query: at, wake)
+- `GET    /api/displays/minion3/frame.png` - Same frame as PNG (query: at, wake, scale)
 
 ## Value Field Behavior
 The `value` field behaves differently on input vs output:
@@ -73,6 +76,17 @@ has already lost the author's formatting; the GUI reads and edits from
 **Key uniqueness** — keys are treated as globally unique identifiers. You can use
 `/api/entries/city` instead of `/api/entries/1`. Numeric path segments are
 resolved as IDs first; non-numeric segments are resolved as keys.
+
+## Minion 3 Display
+`internal/display` renders a 250×122 1-bit dashboard from the `minion-params`,
+`minion-quotes` and `minion-sum` entries; `internal/api/display.go` serves it.
+Rendering is a pure function of (config, inputs, now) and is pinned by
+`internal/display/testdata/golden.pbm` — regenerate with
+`go test ./internal/display -update` and eyeball the PBM when a layout change is
+intended. The device contract (headers, bit packing, sleep computation) is in
+`docs/MINION3_DISPLAY.md`; keep it additive. Only a `frame.bin` request without
+`at=` writes anything (`minion3-prev-quotes`, `minion3-last-seen`); PNG previews
+and `at=` renders are read-only.
 
 ## Versioning
 `vYEAR.MONTH.PATCH` — a calendar version, where PATCH is the repository's commit
