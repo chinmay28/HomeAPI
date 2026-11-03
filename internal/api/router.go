@@ -75,6 +75,9 @@ func NewRouter(h *Handler, frontendFS fs.FS) http.Handler {
 	mux.HandleFunc("/api/categories", methodHandler(h.ListCategories, "GET"))
 	mux.HandleFunc("/api/export", methodHandler(h.ExportData, "GET"))
 	mux.HandleFunc("/api/import", methodHandler(h.ImportData, "POST"))
+	// Rendered e-paper frames: /api/displays/{name}/frame.bin|frame.png.
+	// Registered ahead of the frontend fallback so the prefix is ours.
+	mux.HandleFunc("/api/displays/", methodHandler(h.Display, "GET"))
 
 	// Serve frontend static files
 	if frontendFS != nil {

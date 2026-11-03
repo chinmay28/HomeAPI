@@ -75,6 +75,12 @@ Cards appear in the order you tick them. The choice is saved in that browser, so
 your phone and your laptop can feature different things. **Reset to default**
 puts back the original three.
 
+**Minion 3** — if the store holds a `minion-params`, `minion-quotes` or
+`minion3-last-seen` entry, a card shows the e-paper frame the Minion 3 panel
+will fetch next, when the device last checked in and its wake count, with a
+button to the `minion-params` entry that configures every slot on the panel.
+See [MINION3_DISPLAY.md](MINION3_DISPLAY.md) for the parameters.
+
 ### Browsing Entries
 - Use the **category filter** to narrow by category
 - Use the **search bar** to find entries by key or value
@@ -259,6 +265,32 @@ curl http://localhost:9999/api/health
 
 `version` is the running build, `vYEAR.MONTH.PATCH` — the patch number is the
 repository's commit count. `./homeapi --version` prints the same string.
+
+### Minion 3 Display Frame
+
+The server renders the Minion 3 e-paper dashboard itself:
+
+```bash
+# The frame the device fetches: 4,000 bytes, panel-native 1-bit
+curl -sD - -o frame.bin "http://localhost:9999/api/displays/minion3/frame.bin?wake=12"
+
+# The same picture as a PNG, 3× by default (scale=1..8)
+curl -o frame.png "http://localhost:9999/api/displays/minion3/frame.png?scale=2"
+
+# Preview a different moment without touching stored data
+curl -o evening.png "http://localhost:9999/api/displays/minion3/frame.png?at=2026-11-03T19:15:00-08:00"
+```
+
+The response headers carry what the device needs besides pixels:
+`X-Minion-Sleep-Seconds` (how long to deep-sleep), `X-Minion-Next-Wake`,
+`X-Minion-Rendered-At`, and `X-Minion-Stale: 1` when the quotes are old. A
+matching `If-None-Match` gets a `304` with the same headers and no body.
+
+What the panel shows is configured by one ordinary entry, `minion-params` — a
+JSON object with one parameter object per slot (`hero`, `aux`, `tile1`–`tile4`,
+`ratio1`–`ratio3`, `sum`, `clock`, `wake`, `schedule`, `pills`, `stale`). Edit it
+in the GUI and the PNG shows the result immediately. The full reference,
+including the default configuration, is in [MINION3_DISPLAY.md](MINION3_DISPLAY.md).
 
 ## Working with JSON Values
 

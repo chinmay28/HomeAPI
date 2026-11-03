@@ -280,6 +280,20 @@ Error codes: `NOT_FOUND`, `VALIDATION_ERROR`, `CONFLICT`, `INTERNAL_ERROR`
 ### 4.4 CORS
 CORS is enabled for all origins in development. In production, the frontend is served from the same origin so CORS is not needed.
 
+### 4.5 Display frames
+
+`GET /api/displays/{name}/frame.bin` and `frame.png` serve a server-rendered
+e-paper dashboard. One display exists, `minion3` (250×122, 1-bit); the name is in
+the URL so a second panel is additive. Rendering is a separate package,
+`internal/display`, with no HTTP and no database: `Render(cfg, inputs, now)` is a
+pure function pinned by a golden PBM, and the handler's only job is to assemble
+inputs from ordinary entries (`minion-params`, `minion-quotes`, `minion-sum`,
+`minion3-prev-quotes`) and to write the device's bookkeeping back
+(`minion3-prev-quotes`, `minion3-last-seen`) as ordinary entries. Nothing new
+in the schema, no change to existing endpoints. The device contract — bit
+packing, the `X-Minion-*` headers that carry the sleep time, the ETag/304 path —
+is specified in [MINION3_DISPLAY.md](MINION3_DISPLAY.md).
+
 ## 5. Frontend Design
 
 ### 5.1 Pages
@@ -422,6 +436,7 @@ Database is created automatically on first run.
 - **Database layer**: Test CRUD operations using in-memory SQLite
 - **API handlers**: Test with `httptest.NewRecorder()` and mock DB
 - **Models**: Test validation logic
+- **Display renderer**: golden-frame test (`testdata/golden.pbm`, `-update` to regenerate), slot-by-slot region tests, DST schedule table, native bit packing
 - Location: `*_test.go` files alongside source
 
 ### 7.2 Integration Tests

@@ -108,6 +108,8 @@ make build
 | `GET` | `/api/export` | Export all data as JSON |
 | `POST` | `/api/import` | Import data (`mode`: "merge" or "replace") |
 | `GET` | `/api/health` | Health check |
+| `GET` | `/api/displays/minion3/frame.bin` | Minion 3 e-paper frame, panel-native 1-bit (see [docs/MINION3_DISPLAY.md](docs/MINION3_DISPLAY.md)) |
+| `GET` | `/api/displays/minion3/frame.png?scale=3` | The same frame as a PNG preview |
 
 ## API Examples
 
@@ -216,6 +218,7 @@ patch `0` rather than guessing. Build releases from a full clone
 ```
 cmd/homeapi/           Main entrypoint and embed configuration
 internal/api/          HTTP handlers and router
+internal/display/      Minion 3 e-paper frame renderer (pure; no HTTP, no DB)
 internal/db/           SQLite database access layer
 internal/models/       Data models and validation
 internal/middleware/    HTTP middleware (CORS, logging)
@@ -231,6 +234,7 @@ tests/e2e/             End-to-end tests (full workflow)
 
 - [Design Document](docs/DESIGN.md) - architecture, data model, API design
 - [User Guide](docs/USER_GUIDE.md) - detailed usage instructions and examples
+- [Minion 3 display](docs/MINION3_DISPLAY.md) - the e-paper dashboard frame: device contract, `minion-params` slots, layout
 
 ## License
 

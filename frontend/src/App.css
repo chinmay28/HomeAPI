@@ -367,6 +367,53 @@
   margin-bottom: 1rem;
 }
 
+/* The Minion 3 panel card: a server-rendered frame, shown pixel-for-pixel at
+   2× and allowed to shrink on a phone — it is a bitmap, so it must never be
+   smoothed. */
+.minion-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.minion-card__head .card__title {
+  margin-bottom: 0;
+}
+.minion-card__frame {
+  display: block;
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: var(--surface-sunken);
+}
+.minion-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 2rem;
+  margin: 0.75rem 0 0;
+}
+.minion-card__meta dt {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.minion-card__meta dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.minion-card__hint {
+  margin: 0.75rem 0 0;
+}
+.minion-card__hint code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+}
+
 .page-title {
   font-size: 1.5rem;
   font-weight: 700;
