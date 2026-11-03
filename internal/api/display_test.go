@@ -281,7 +281,22 @@ func TestFrameHandlers_Degraded(t *testing.T) {
 		good := newDisplayHandler(t)
 		ok := getFrame(good, "/api/displays/minion3/frame.bin?at="+testAt, nil)
 		if bytes.Equal(w.Body.Bytes(), ok.Body.Bytes()) {
-			t.Error("the fallback frame should differ (it shows Cfg?)")
+			t.Error("the fallback frame should differ (no sum entry, so it shows Cfg?)")
+		}
+	})
+
+	t.Run("missing params still shows minion-sum", func(t *testing.T) {
+		h := newTestHandler(t)
+		seed(t, h, "minion", display.QuotesKey, testQuotes)
+		seed(t, h, "minion", "minion-sum", "42")
+		w := getFrame(h, "/api/displays/minion3/frame.bin?at="+testAt, nil)
+		if w.Code != http.StatusOK {
+			t.Fatalf("status %d", w.Code)
+		}
+		good := newDisplayHandler(t)
+		ok := getFrame(good, "/api/displays/minion3/frame.bin?at="+testAt, nil)
+		if !bytes.Equal(w.Body.Bytes(), ok.Body.Bytes()) {
+			t.Error("with a minion-sum entry the fallback frame should match the default-params frame (sum, not Cfg?)")
 		}
 	})
 

@@ -337,8 +337,9 @@ type Inputs struct {
 	HasWake bool // false when the device did not report one
 
 	// ConfigInvalid marks that cfg is the built-in fallback because the stored
-	// `minion-params` was missing or unparseable; the footer then shows
-	// "Cfg?" where the sum would be so the problem is visible on the panel.
+	// `minion-params` was missing or unparseable. The fallback still names
+	// minion-sum, so the footer keeps showing the sum; it shows "Cfg?" in its
+	// place only when there is no sum text, so the problem stays visible.
 	ConfigInvalid bool
 }
 
