@@ -4,6 +4,11 @@ A self-hosted REST API and web GUI for storing simple key-value text data. Compi
 
 **Use cases:** stock ticker watchlists, home automation configs, bookmarks, notes, and any simple text data that needs to be read/written by scripts or humans.
 
+**On Android:** [HomeAPI for Android](docs/ANDROID.md) opens your server — or
+runs the whole thing on the phone — and adds a home-screen widget. Install
+[`homeapi.apk`](https://github.com/chinmay28/homeapi/releases/latest/download/homeapi.apk)
+from the latest release.
+
 ## Quick Start (one line)
 
 Deploy HomeAPI as a `systemd` service with a single command. The **same**
@@ -67,7 +72,7 @@ A reference unit file is available at [`deploy/homeapi.service`](deploy/homeapi.
 ## Build From Source
 
 ```bash
-# Install prerequisites (Go, Node.js, GCC) if needed
+# Install prerequisites (Go, Node.js, make) if needed
 ./scripts/install-prereqs.sh
 
 # Build
@@ -93,6 +98,8 @@ make build
 - **Search** - full-text search across keys and values
 - **Import/Export** - backup and restore data as JSON
 - **SQLite storage** - reliable, single-file database
+- **Android app** - thin client or the whole server on the phone, with a
+  home-screen widget ([docs/ANDROID.md](docs/ANDROID.md))
 
 ## API Endpoints
 
@@ -241,6 +248,11 @@ internal/db/           SQLite database access layer
 internal/models/       Data models and validation
 internal/middleware/    HTTP middleware (CORS, logging)
 internal/version/      Application version (see "Versioning" below)
+internal/serve/        Flags/env → bind address, discovery, graceful stop
+internal/discovery/    UDP discovery responder ("Find on this network")
+internal/hostenv/      HOMEAPI_TZ → local time (for the Android app)
+cmd/homeapi-icons/     Derives the Android icons from frontend/public/icon.svg
+apps/android/          The Android app (see apps/android/README.md)
 frontend/src/          React application source
 scripts/version.mjs    Assembles the version for both builds
 docs/                  Design document and user guide
@@ -253,6 +265,8 @@ tests/e2e/             End-to-end tests (full workflow)
 - [Design Document](docs/DESIGN.md) - architecture, data model, API design
 - [User Guide](docs/USER_GUIDE.md) - detailed usage instructions and examples
 - [Minion 3 display](docs/MINION3_DISPLAY.md) - the e-paper dashboard frame: device contract, `minion-params` slots, layout
+- [Android app](docs/ANDROID.md) - installing and using HomeAPI on a phone; [how it is built](apps/android/README.md)
+- [Changelog](CHANGELOG.md) - release notes; a `## vX.Y.Z` section is what publishes a release
 
 ## License
 

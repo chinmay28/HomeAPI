@@ -15,6 +15,10 @@ Use cases: stock ticker watchlists, home automation configs, bookmarks, notes, a
 - **Lint**: `golangci-lint run ./...`
 - **Frontend lint**: `cd frontend && npm run lint`
 - **Frontend tests**: `cd frontend && npm test`
+- **Icons**: `make icons` (regenerate the Android icons from `frontend/public/icon.svg`), `make icons-check`
+- **Release binaries**: `make release` → `dist/homeapi-linux-{amd64,arm64}` (static, frontend embedded)
+- **Android app**: `cd apps/android && ./gradlew --no-daemon :core:test :app:lintDebug :app:assembleRelease`
+  (`-PcoreOnly :core:test` needs no Android SDK; `-PappServer=false` builds a thin client without Go)
 
 ## Architecture
 - **Backend**: Go with `net/http` standard library, SQLite via `modernc.org/sqlite` (pure Go, no CGO).
@@ -120,6 +124,24 @@ names — `releases/latest/download/homeapi.apk` is linked from the docs.
 
 The application version is *not* the export/import format version — that is a
 separate `version` field and stays at `"1"`.
+
+## Android app
+`apps/android` (see `apps/android/README.md`, user guide `docs/ANDROID.md`) is
+HomeAPI's web GUI in a web view, against a remote server or the same `homeapi`
+binary run on the phone (`CGO_ENABLED=0 GOOS=linux GOARCH=arm64 -tags
+timetzdata`, packaged as `libhomeapi.so`). Every decision it makes lives in
+`:core` with a JUnit test; `:app` is glue. Rules:
+- The server flags/env it uses (`--host`, `--discovery-port`, `HOMEAPI_TZ`,
+  `HOMEAPI_NAME`, `HOMEAPI_DB_PATH`) are ordinary documented settings, inert
+  when unset; keep server changes for the app additive like that.
+- `internal/discovery`'s `DefaultPort`/`Query`/`Service` are mirrored in
+  `core/DiscoveryProtocol.kt`, whose test reads them out of the Go source.
+- Web hooks for the app feature-detect `window.homeapiApp`
+  (`frontend/src/nativeApp.js`) and change nothing in a plain browser.
+- Icons are generated (`make icons`); never hand-edit a `mipmap-*` PNG,
+  `ic_launcher.xml` or `ic_launcher_background.xml`. `ic_stat_homeapi.xml` and
+  `ic_launcher_monochrome.xml` are hand-drawn silhouettes of the SVG.
+- Use `--no-daemon --max-workers=2` on shared build machines.
 
 ## Code Style
 - Go: standard `gofmt` formatting, error wrapping with `fmt.Errorf("context: %w", err)`
