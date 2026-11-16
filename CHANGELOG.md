@@ -12,7 +12,7 @@ manual run) whose version has no section fails. A heading must name the tag
 exactly. Work not yet released goes under `## Unreleased`, which never matches a
 version; rename it to the version when cutting the release.
 
-## Unreleased
+## v2026.11.25
 
 **Downloads:** **`homeapi.apk`** (new: HomeAPI for Android — on the phone, open
 `https://github.com/chinmay28/homeapi/releases/latest/download/homeapi.apk`
