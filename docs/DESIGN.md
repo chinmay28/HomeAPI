@@ -427,6 +427,14 @@ than `--depth 1`).
 | `HOMEAPI_PORT` | `9999` | HTTP listen port |
 | `HOMEAPI_DB_PATH` | `~/.homeapi/homeapi.db` | Database file path |
 | `HOMEAPI_LOG_LEVEL` | `info` | Log level (debug, info, warn, error) |
+| `HOMEAPI_HOST` | every interface | Address to bind (`--host`), e.g. `127.0.0.1` for this machine only |
+| `HOMEAPI_DISCOVERY_PORT` | `9998` | UDP port that answers network discovery (`--discovery-port`); `0` turns it off, and a loopback bind never answers |
+| `HOMEAPI_NAME` | the hostname | Name announced to discovery |
+| `HOMEAPI_TZ` | unset | IANA zone to use as local time (the Android app sets it; elsewhere the system zone applies) |
+
+Resolved flag > variable > default in `internal/serve`; every default is the
+server's original behaviour, plus the discovery responder (`internal/discovery`).
+SIGTERM and Ctrl-C drain in-flight requests (5 s) and close the database.
 
 ### 6.3 Deployment
 1. Copy binary to target machine

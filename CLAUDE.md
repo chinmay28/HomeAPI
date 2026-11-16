@@ -34,6 +34,10 @@ internal/models/     - Data models
 internal/middleware/  - HTTP middleware (CORS, logging, auth)
 internal/display/    - Minion 3 e-paper frame renderer: pure, deterministic, golden-tested (docs/MINION3_DISPLAY.md)
 internal/version/    - Application version (stamped Date + Patch, from the commit)
+internal/serve/      - Flags/env → bind address, discovery, graceful SIGTERM shutdown
+internal/discovery/  - UDP discovery responder (HOMEAPI-DISCOVER/1 on 9998), mirrored by the app
+internal/hostenv/    - HOMEAPI_TZ → time.Local (Go on Android starts in UTC); inert when unset
+apps/android/        - The Android app: thin client or the same binary on the phone (apps/android/README.md)
 frontend/            - React application
 scripts/version.mjs  - Assembles the version for the Go and web builds
 docs/                - Design document and user guide

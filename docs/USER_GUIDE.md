@@ -441,6 +441,10 @@ HomeAPI is configured via environment variables:
 | `HOMEAPI_PORT` | `9999` | HTTP server port |
 | `HOMEAPI_DB_PATH` | `~/.homeapi/homeapi.db` | Path to SQLite database file |
 | `HOMEAPI_LOG_LEVEL` | `info` | Logging level: debug, info, warn, error |
+| `HOMEAPI_HOST` | every interface | Address to bind (`--host`), e.g. `127.0.0.1` for this machine only |
+| `HOMEAPI_DISCOVERY_PORT` | `9998` | UDP port that answers network discovery (`--discovery-port`); `0` turns it off, and a loopback bind never answers |
+| `HOMEAPI_NAME` | the hostname | Name announced to discovery |
+| `HOMEAPI_TZ` | unset | IANA zone to use as local time (the Android app sets it; elsewhere the system zone applies) |
 
 The database file and its directory are created automatically on first run.
 

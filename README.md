@@ -161,8 +161,20 @@ curl -X POST http://localhost:9999/api/import \
 | `HOMEAPI_PORT` | `9999` | HTTP listen port |
 | `HOMEAPI_DB_PATH` | `~/.homeapi/homeapi.db` | SQLite database file path |
 | `HOMEAPI_LOG_LEVEL` | `info` | Log level (debug, info, warn, error) |
+| `HOMEAPI_HOST` | every interface | Address to bind (`--host`), e.g. `127.0.0.1` for this machine only |
+| `HOMEAPI_DISCOVERY_PORT` | `9998` | UDP port that answers network discovery (`--discovery-port`); `0` turns it off, and a loopback bind never answers |
+| `HOMEAPI_NAME` | the hostname | Name announced to discovery |
+| `HOMEAPI_TZ` | unset | IANA zone to use as local time (the Android app sets it; elsewhere the system zone applies) |
 
-The database directory and file are created automatically on first run.
+Flags (`--port`, `--host`, `--discovery-port`) override their variables. The
+database directory and file are created automatically on first run.
+
+**Discovery.** A server answers a UDP broadcast of `HOMEAPI-DISCOVER/1` on port
+9998 with a line of JSON — `{"service":"homeapi","name":…,"port":…,"version":…}`
+— so the Android app can list the servers on the network instead of having you
+type an address. It reveals nothing a port scan would not, answers only private,
+loopback, link-local and Tailscale addresses, and is off with
+`--discovery-port 0`. See [`internal/discovery`](internal/discovery/discovery.go).
 
 ## Build Requirements
 
