@@ -168,7 +168,9 @@ The database directory and file are created automatically on first run.
 
 - **Go** 1.26 or later
 - **Node.js** 24+ (LTS) and npm (for frontend build)
-- **GCC** (required by the SQLite driver via CGO)
+- No C compiler: the SQLite driver is pure Go (`modernc.org/sqlite`) and the
+  binary is built with `CGO_ENABLED=0`, so it is static and cross-compiles
+  to any `GOOS`/`GOARCH` (the Android app's full-stack mode relies on this)
 
 Run `./scripts/install-prereqs.sh` to install all prerequisites automatically. Supports Ubuntu/Debian, Fedora, RHEL/CentOS, Arch Linux, and macOS (Homebrew).
 

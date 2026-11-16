@@ -17,7 +17,7 @@ frontend: frontend/node_modules
 # Build Go binary. The patch number is the repo's commit count, which a
 # compiled binary can't read — stamp it in (see internal/version).
 backend: frontend
-	go build -ldflags "-X github.com/chinmay28/homeapi/internal/version.Patch=$$(node scripts/version.mjs --patch)" -o homeapi ./cmd/homeapi
+	CGO_ENABLED=0 go build -ldflags "-X github.com/chinmay28/homeapi/internal/version.Patch=$$(node scripts/version.mjs --patch)" -o homeapi ./cmd/homeapi
 
 # Development: run Go server only (frontend via npm start separately)
 dev:

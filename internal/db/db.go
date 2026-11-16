@@ -10,10 +10,23 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite" // pure Go: keeps the binary CGO_ENABLED=0 and static
 
 	"github.com/chinmay28/homeapi/internal/models"
 )
+
+// driverOptions make modernc.org/sqlite read and write timestamps exactly as
+// github.com/mattn/go-sqlite3 (the driver HomeAPI shipped with until 2026.11)
+// did, so existing databases neither change nor sort differently:
+//
+//   - _time_format=sqlite writes a time.Time as "2006-01-02 15:04:05.999999999-07:00",
+//     mattn's format, instead of modernc's default time.Time.String();
+//   - _timezone=UTC reads zone-less text (CURRENT_TIMESTAMP's "2006-01-02 15:04:05")
+//     as UTC and hands every time back in time.UTC, so the API's JSON keeps
+//     its "Z" suffix.
+//
+// testdata/mattn-go-sqlite3.db, written by the old driver, pins this.
+const driverOptions = "_time_format=sqlite&_timezone=UTC"
 
 // Store provides database operations for entries.
 type Store struct {
@@ -36,7 +49,7 @@ func New(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("creating db directory: %w", err)
 	}
 
-	db, err := sql.Open("sqlite3", dbPath+"?_journal_mode=WAL&_busy_timeout=5000")
+	db, err := sql.Open("sqlite", dbPath+"?_journal_mode=WAL&_busy_timeout=5000&"+driverOptions)
 	if err != nil {
 		return nil, fmt.Errorf("opening database: %w", err)
 	}
@@ -56,10 +69,13 @@ func New(dbPath string) (*Store, error) {
 // NewInMemory creates a Store backed by an in-memory SQLite database.
 // Useful for testing.
 func NewInMemory() (*Store, error) {
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite", ":memory:?"+driverOptions)
 	if err != nil {
 		return nil, fmt.Errorf("opening in-memory database: %w", err)
 	}
+	// Every connection to ":memory:" is a database of its own; one connection
+	// keeps the pool from handing a query an empty one.
+	db.SetMaxOpenConns(1)
 
 	s := &Store{db: db}
 	if err := s.migrate(); err != nil {

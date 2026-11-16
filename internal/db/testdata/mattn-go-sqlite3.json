@@ -1,0 +1,98 @@
+{
+  "export": [
+    {
+      "id": 4,
+      "category": "config",
+      "key": "theme",
+      "value": "{\"dark\":true}",
+      "created_at": "2026-11-16T22:24:58.297768906Z",
+      "updated_at": "2026-11-16T22:24:58.297768906Z"
+    },
+    {
+      "id": 2,
+      "category": "default",
+      "key": "city",
+      "value": "Sunnyvale",
+      "created_at": "2026-11-16T22:24:58.276908296Z",
+      "updated_at": "2026-11-16T22:24:58.297511756Z"
+    },
+    {
+      "id": 3,
+      "category": "notes",
+      "key": "todo",
+      "value": "milk",
+      "created_at": "2026-11-16T22:24:58Z",
+      "updated_at": "2026-11-16T22:24:58Z"
+    },
+    {
+      "id": 1,
+      "category": "watchlist",
+      "key": "tickers",
+      "value": "[\"AAPL\",\"MSFT\"]",
+      "created_at": "2026-11-16T22:24:58.276840505Z",
+      "updated_at": "2026-11-16T22:24:58.276840505Z"
+    }
+  ],
+  "list": {
+    "entries": [
+      {
+        "id": 4,
+        "category": "config",
+        "key": "theme",
+        "value": "{\"dark\":true}",
+        "created_at": "2026-11-16T22:24:58.297768906Z",
+        "updated_at": "2026-11-16T22:24:58.297768906Z"
+      },
+      {
+        "id": 2,
+        "category": "default",
+        "key": "city",
+        "value": "Sunnyvale",
+        "created_at": "2026-11-16T22:24:58.276908296Z",
+        "updated_at": "2026-11-16T22:24:58.297511756Z"
+      },
+      {
+        "id": 1,
+        "category": "watchlist",
+        "key": "tickers",
+        "value": "[\"AAPL\",\"MSFT\"]",
+        "created_at": "2026-11-16T22:24:58.276840505Z",
+        "updated_at": "2026-11-16T22:24:58.276840505Z"
+      },
+      {
+        "id": 3,
+        "category": "notes",
+        "key": "todo",
+        "value": "milk",
+        "created_at": "2026-11-16T22:24:58Z",
+        "updated_at": "2026-11-16T22:24:58Z"
+      }
+    ],
+    "total": 4,
+    "page": 1,
+    "per_page": 50,
+    "total_pages": 1
+  },
+  "raw": [
+    {
+      "ID": 1,
+      "Created": "2026-11-16 22:24:58.276840505+00:00",
+      "Updated": "2026-11-16 22:24:58.276840505+00:00"
+    },
+    {
+      "ID": 2,
+      "Created": "2026-11-16 22:24:58.276908296+00:00",
+      "Updated": "2026-11-16 22:24:58.297511756+00:00"
+    },
+    {
+      "ID": 3,
+      "Created": "2026-11-16 22:24:58",
+      "Updated": "2026-11-16 22:24:58"
+    },
+    {
+      "ID": 4,
+      "Created": "2026-11-16 22:24:58.297768906+00:00",
+      "Updated": "2026-11-16 22:24:58.297768906+00:00"
+    }
+  ]
+}
