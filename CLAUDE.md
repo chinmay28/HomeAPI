@@ -17,7 +17,10 @@ Use cases: stock ticker watchlists, home automation configs, bookmarks, notes, a
 - **Frontend tests**: `cd frontend && npm test`
 
 ## Architecture
-- **Backend**: Go with `net/http` standard library, SQLite via `modernc.org/sqlite` (pure Go, no CGO)
+- **Backend**: Go with `net/http` standard library, SQLite via `modernc.org/sqlite` (pure Go, no CGO).
+  Every build is `CGO_ENABLED=0`; keep it that way — the Android app runs the same static binary.
+  The driver's DSN options (`driverOptions` in `internal/db/db.go`) make timestamps read and write
+  exactly as the old `mattn/go-sqlite3` build did; `internal/db/testdata/mattn-go-sqlite3.db` pins it.
 - **Frontend**: React (Create React App), embedded into Go binary via `embed.FS`
 - **Database**: SQLite, stored at `~/.homeapi/homeapi.db` by default (configurable via `HOMEAPI_DB_PATH`)
 - **Single binary**: Frontend is built and embedded at compile time
@@ -30,7 +33,7 @@ internal/db/         - Database access layer
 internal/models/     - Data models
 internal/middleware/  - HTTP middleware (CORS, logging, auth)
 internal/display/    - Minion 3 e-paper frame renderer: pure, deterministic, golden-tested (docs/MINION3_DISPLAY.md)
-internal/version/    - Application version (Year/Month constants, stamped Patch)
+internal/version/    - Application version (stamped Date + Patch, from the commit)
 frontend/            - React application
 scripts/version.mjs  - Assembles the version for the Go and web builds
 docs/                - Design document and user guide
@@ -90,13 +93,26 @@ and `at=` renders are read-only.
 
 ## Versioning
 `vYEAR.MONTH.PATCH` — a calendar version, where PATCH is the repository's commit
-count, so every commit is a patch release. Year/month are Go source constants in
-`internal/version/version.go` (bump by hand when a release line opens, never
-from the build clock); the patch number is stamped at build time. The month is
-not zero-padded, which keeps the string valid semver. `scripts/version.mjs` is the one place it is assembled, and both the
-Go binary (`-ldflags -X`) and the web bundle (`REACT_APP_VERSION`) read from it,
-so the GUI header, `--version`, and `/api/health` always agree. A build without
-git reports patch `0`.
+count, so every commit is a patch release. YEAR.MONTH is the month of HEAD's
+**committer date, in the committer's own timezone** — there are no constants to
+bump, and it is never the build clock (only an unstamped `go build`, which has
+no commit to ask, falls back to the build month under patch 0). The month is
+not zero-padded, which keeps the string valid semver. `scripts/version.mjs` is
+the one place it is assembled: `--ldflags` prints the `-X …version.Patch/Date`
+flags every Go build is stamped with (Makefile, the release workflow, the
+Android app's server build), the web bundle reads it as `REACT_APP_VERSION`,
+and the APK takes it as `-PappVersionName` / `-PappVersionCode`, so the GUI
+header, `--version`, `/api/health` and the app always agree. A build without
+git, or a shallow clone, reports patch `0`; anything building a release needs
+the full commit graph (`fetch-depth: 0`). Don't assert a literal version in a
+test — it changes with every commit.
+
+Releases: `.github/workflows/release.yml` runs on `v*` tags, pushes to `main`
+and manual dispatch. The gate is a `## vX.Y.Z` section in `CHANGELOG.md` that
+matches the commit's version (a push without one is skipped, a tag or dispatch
+without one fails); it publishes `homeapi-linux-amd64`, `homeapi-linux-arm64`
+(static, frontend embedded), `homeapi.apk` and `SHA256SUMS`. Keep those asset
+names — `releases/latest/download/homeapi.apk` is linked from the docs.
 
 The application version is *not* the export/import format version — that is a
 separate `version` field and stays at `"1"`.

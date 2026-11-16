@@ -1,4 +1,4 @@
-.PHONY: build clean test frontend backend dev test-unit test-integration test-e2e
+.PHONY: build clean test frontend backend dev test-unit test-integration test-e2e release version
 
 # Build the single static binary with embedded frontend
 build: frontend backend
@@ -14,10 +14,26 @@ frontend: frontend/node_modules
 	rm -rf cmd/homeapi/frontend_build
 	cp -r frontend/build cmd/homeapi/frontend_build
 
-# Build Go binary. The patch number is the repo's commit count, which a
-# compiled binary can't read — stamp it in (see internal/version).
+# Build Go binary. The version is the commit's month and the repo's commit
+# count, which a compiled binary can't read — stamp them in (see
+# internal/version). CGO_ENABLED=0: the SQLite driver is pure Go, and a static
+# binary is what lets the same build run on any Linux, and on a phone.
+LDFLAGS = $(shell node scripts/version.mjs --ldflags)
+
 backend: frontend
-	CGO_ENABLED=0 go build -ldflags "-X github.com/chinmay28/homeapi/internal/version.Patch=$$(node scripts/version.mjs --patch)" -o homeapi ./cmd/homeapi
+	CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o homeapi ./cmd/homeapi
+
+# Static linux/<arch> release binaries with the frontend embedded, as the
+# release workflow publishes them: dist/homeapi-linux-amd64, -arm64.
+release: frontend
+	mkdir -p dist
+	for arch in amd64 arm64; do \
+		CGO_ENABLED=0 GOOS=linux GOARCH=$$arch go build -trimpath -ldflags "$(LDFLAGS)" -o dist/homeapi-linux-$$arch ./cmd/homeapi || exit 1; \
+	done
+
+# Print the version this tree builds as.
+version:
+	@node scripts/version.mjs
 
 # Development: run Go server only (frontend via npm start separately)
 dev:
@@ -44,5 +60,6 @@ test-e2e:
 # Clean build artifacts
 clean:
 	rm -f homeapi
+	rm -rf dist
 	rm -rf cmd/homeapi/frontend_build
 	rm -rf frontend/build

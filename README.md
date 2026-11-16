@@ -202,14 +202,18 @@ leading numbers say *when* a release line opened, not what it promises about
 compatibility, and HomeAPI's compatibility promise is unconditional (see the
 backward-compatibility rules) rather than something a number could describe.
 
-`Year` and `Month` are bumped by hand in `internal/version/version.go` — not
-read from the build clock, so rebuilding an old tree still reports what it
-originally shipped. The month is not zero-padded (`v2026.8.311`, not
-`v2026.08.311`), because semver forbids a leading zero. The patch number is
-stamped in at build time by `make build`.
+Nobody bumps anything. The year and month are the month of the commit being
+built (its committer date, in the committer's own timezone), so the line moves
+the moment a commit lands in a new month, and a rebuild of an old commit still
+reports what it shipped as — never the build clock. The month is not
+zero-padded (`v2026.8.311`, not `v2026.08.311`), because semver forbids a
+leading zero. Both parts are stamped in at build time by `make build`
+(`node scripts/version.mjs --ldflags`); `make version` prints the version the
+tree builds as.
 
-The same number appears in the GUI header, in `./homeapi --version`, and in
-`GET /api/health`, because all three come from `scripts/version.mjs`.
+The same number appears in the GUI header, in `./homeapi --version`, in
+`GET /api/health` and in the Android app, because all of them come from
+`scripts/version.mjs`.
 
 A build made without git — a source tarball, or a `--depth 1` clone — reports
 patch `0` rather than guessing. Build releases from a full clone
