@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The themed (Android 13+) launcher icon: the notification icon's
+     silhouette in the adaptive icon's 72dp safe zone (18dp in from each side
+     of 108dp). Hand-drawn, like ic_stat_homeapi.xml, which it reuses. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_stat_homeapi"
+    android:inset="18dp" />

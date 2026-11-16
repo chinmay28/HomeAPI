@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One entry: its key over its value, and when it was read. Plain views
+     only — RemoteViews allows nothing else. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="6dp"
+            android:contentDescription="@null"
+            android:src="@drawable/homeapi_logo" />
+
+        <TextView
+            android:id="@+id/widget_key"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:fontFamily="monospace"
+            android:maxLines="1"
+            android:textColor="@color/homeapi_accent"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <ProgressBar
+            android:id="@+id/widget_progress"
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_value"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="6dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:fontFamily="monospace"
+        android:textColor="@color/homeapi_text"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/widget_footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:maxLines="1"
+        android:textColor="@color/homeapi_muted"
+        android:textSize="11sp" />
+</LinearLayout>

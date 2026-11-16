@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Half an hour is the shortest period Android honours; a tap reads it now. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:configure="io.github.chinmay28.homeapi.EntryWidgetConfigActivity"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/widget_entry"
+    android:minWidth="110dp"
+    android:minHeight="50dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="50dp"
+    android:previewImage="@drawable/homeapi_logo"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable"
+    tools:targetApi="s" />

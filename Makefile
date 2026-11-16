@@ -1,4 +1,4 @@
-.PHONY: build clean test frontend backend dev test-unit test-integration test-e2e release version
+.PHONY: build clean test frontend backend dev test-unit test-integration test-e2e release version icons icons-check
 
 # Build the single static binary with embedded frontend
 build: frontend backend
@@ -31,6 +31,14 @@ release: frontend
 		CGO_ENABLED=0 GOOS=linux GOARCH=$$arch go build -trimpath -ldflags "$(LDFLAGS)" -o dist/homeapi-linux-$$arch ./cmd/homeapi || exit 1; \
 	done
 
+# The Android app's icons, derived from frontend/public/icon.svg (see
+# cmd/homeapi-icons). icons-check fails when a committed copy has drifted.
+icons:
+	go run ./cmd/homeapi-icons
+
+icons-check:
+	go run ./cmd/homeapi-icons -check
+
 # Print the version this tree builds as.
 version:
 	@node scripts/version.mjs
@@ -42,6 +50,7 @@ dev:
 # Run all tests
 test:
 	go test ./internal/... -v -count=1
+	go test ./cmd/homeapi-icons -count=1
 	go test ./tests/integration/... -v -count=1
 	go test ./tests/e2e/... -v -count=1
 
