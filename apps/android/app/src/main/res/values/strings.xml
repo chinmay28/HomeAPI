@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HomeAPI</string>
+    <string name="tagline">Your own key-value store</string>
+    <string name="settings_title">App settings</string>
+    <string name="settings_short">Settings</string>
+    <string name="save_to_downloads">Save to Downloads</string>
+
+    <!-- First run -->
+    <string name="setup_intro">Where is your HomeAPI? You can change this later in the app\'s settings.</string>
+    <string name="setup_remote_title">Connect to a server</string>
+    <string name="setup_remote_body">HomeAPI runs on another machine — a Raspberry Pi, a desktop, a server. This phone opens it, like a browser would.</string>
+    <string name="setup_address_hint">Server address, e.g. 192.168.1.20 (port 9999) or https://home.example.com</string>
+    <string name="setup_find">Find on this network</string>
+    <string name="setup_finding">Looking…</string>
+    <string name="setup_found_item">%1$s — %2$s</string>
+    <string name="setup_found_none">No HomeAPI server answered. Type its address instead (servers older than this app do not answer).</string>
+    <string name="setup_phone_title">Run HomeAPI on this phone</string>
+    <string name="setup_phone_body">The whole of HomeAPI runs here, with its database in this app\'s private storage. Turn on “Serve other devices” in the settings and scripts on your network can use this phone\'s API.</string>
+    <string name="setup_phone_unavailable">This build of the app, or this phone\'s processor, has no HomeAPI server in it. Connect to a server instead.</string>
+    <string name="setup_continue">Continue</string>
+    <string name="setup_version">Version %1$s</string>
+
+    <!-- The developer badge -->
+    <string name="dev_badge_show">Show the developer badge</string>
+    <string name="dev_badge_full">Built by CM Hegday — 0x434d</string>
+    <string name="dev_handle" translatable="false">github.com/chinmay28</string>
+
+    <!-- Main screen -->
+    <string name="starting_server">Starting HomeAPI on this phone…</string>
+    <string name="restarting_server">HomeAPI stopped. Starting it again…</string>
+    <string name="server_failed">HomeAPI on this phone would not start.</string>
+    <string name="connecting">Connecting to %1$s…</string>
+    <string name="cannot_reach">Cannot reach %1$s</string>
+    <string name="bad_certificate">%1$s has a certificate this phone does not trust. Install its CA in Android\'s settings, or connect over http on your own network.</string>
+    <string name="retry">Retry</string>
+    <string name="open_settings">App settings</string>
+
+    <!-- Files -->
+    <string name="saved_to_downloads">Saved %1$s to Downloads</string>
+    <string name="save_failed">Could not save %1$s: %2$s</string>
+    <string name="downloading">Downloading %1$s</string>
+    <string name="no_app_for_link">No app on this phone opens that link.</string>
+    <string name="share_with">Share</string>
+
+    <!-- Notifications -->
+    <string name="channel_server">HomeAPI on this phone</string>
+    <string name="channel_downloads">Downloads</string>
+    <string name="notify_server_running">HomeAPI is running on this phone</string>
+    <string name="notify_server_local">Only this phone can reach it.</string>
+    <string name="notify_server_shared">Scripts and browsers on this network can use http://%1$s:%2$d</string>
+    <string name="notify_stop">Stop</string>
+
+    <!-- Settings -->
+    <string name="pref_cat_mode">How the app reaches HomeAPI</string>
+    <string name="pref_mode_switch">Run HomeAPI on this phone</string>
+    <string name="pref_mode_summary_phone">Full stack: the server and its database are on this phone. Turn off to open a HomeAPI that runs on another machine.</string>
+    <string name="pref_mode_summary_remote">Thin client: HomeAPI runs on another machine and this phone opens it. Turn on to run it here.</string>
+    <string name="pref_cat_remote">Server on another machine</string>
+    <string name="pref_address">Server address</string>
+    <string name="pref_find">Find servers on this network</string>
+    <string name="pref_find_summary">Lists the HomeAPI servers that answer on this Wi-Fi.</string>
+    <string name="pref_cat_phone">HomeAPI on this phone</string>
+    <string name="pref_port">Port</string>
+    <string name="pref_share">Serve other devices on this network</string>
+    <string name="pref_share_summary_off">Only this phone can reach the API.</string>
+    <string name="pref_share_summary_on">Scripts, browsers and displays on this network can read and write it, and other HomeAPI apps can find it. HomeAPI has no password and the connection is not encrypted: use it on a network you trust.</string>
+    <string name="pref_keep">Keep running when the app is closed</string>
+    <string name="pref_keep_summary">Other devices and the home-screen widget can still reach it. Shows a notification while it runs.</string>
+    <string name="pref_name">Name on the network</string>
+    <string name="pref_name_summary">What other HomeAPI apps list this phone as: %1$s</string>
+    <string name="pref_status">Server</string>
+    <string name="pref_restart">Restart the server</string>
+    <string name="pref_log">Server log</string>
+    <string name="pref_log_summary">What HomeAPI on this phone has said lately.</string>
+    <string name="pref_stop">Stop the server now</string>
+    <string name="pref_cat_about">About</string>
+    <string name="pref_version">Version</string>
+    <string name="pref_data">Where the data is kept</string>
+    <string name="pref_data_summary">In this app\'s private storage. Uninstalling the app deletes it — export it first (Settings in HomeAPI → Export).</string>
+    <string name="pref_developer">Developer</string>
+
+    <string name="status_stopped">Stopped</string>
+    <string name="status_starting">Starting…</string>
+    <string name="status_running">Running %1$s at %2$s</string>
+    <string name="status_restarting">Exited (status %1$d), restarting</string>
+    <string name="status_failed">Not running: exited with status %1$d. See the server log.</string>
+    <string name="status_unavailable">No HomeAPI server in this build</string>
+
+    <!-- The home-screen widget -->
+    <string name="widget_description">One entry\'s value, by key. Tap to read it again.</string>
+    <string name="widget_config_title">Show an entry</string>
+    <string name="widget_config_body">The widget shows this entry\'s value from the server the app is set to, and reads it again when you tap it.</string>
+    <string name="widget_config_key">Key</string>
+    <string name="widget_config_hint">e.g. tickers — as in /api/entries/tickers</string>
+    <string name="widget_config_save">Add widget</string>
+    <string name="widget_not_set">Tap to choose an entry.</string>
+    <string name="widget_not_configured">Open HomeAPI and choose a server first.</string>
+    <string name="widget_unreachable">Cannot reach %1$s.</string>
+    <string name="widget_missing">No entry with this key.</string>
+    <string name="widget_empty">(empty)</string>
+    <string name="widget_updated">Read at %1$s · tap to refresh</string>
+    <string name="widget_tap_retry">Tap to try again</string>
+</resources>

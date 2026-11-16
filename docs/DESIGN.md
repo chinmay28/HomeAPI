@@ -398,15 +398,20 @@ line opened, not what it promises about compatibility; that promise is
 unconditional here (§ backward compatibility), and the export/import format has
 its own `version` field for the one change a number would have to describe.
 
-- `YEAR`/`MONTH` are Go source constants in `internal/version/version.go`,
-  bumped by hand when a line opens. That file is the single declaration of them
-  in the tree. They are deliberately not read from the build clock, which would
-  move the version without a commit.
+- `YEAR`/`MONTH` are the month of the commit being built — HEAD's committer
+  date, in the committer's own timezone (`git log -1 --format=%cI`). Nobody
+  bumps them; a commit's date never changes, so a rebuild of an old tree still
+  reports what it shipped as. They are deliberately not read from the build
+  clock, which would move the version without a commit (an unstamped
+  `go build` is the one exception: it has no commit to ask, so it names the
+  build month under patch 0).
 - The month is not zero-padded (`v2026.8.311`, not `v2026.08.311`): semver
   forbids a leading zero, so an unpadded month keeps the string parseable.
 - `PATCH` only exists at build time (`git rev-list --count HEAD`). The Go
-  binary gets it stamped in via `-ldflags -X`; the web bundle gets it inlined
-  by Create React App from `REACT_APP_VERSION`.
+  binary gets it and the month stamped in via `-ldflags -X` (`version.Patch`,
+  `version.Date`); the web bundle gets the string inlined by Create React App
+  from `REACT_APP_VERSION`; the Android app gets it as `versionName`, with the
+  count as `versionCode`.
 
 Both sides call `scripts/version.mjs`, so the header, `homeapi --version`, and
 `/api/health` can never disagree. A build made without git — a tarball, or a
@@ -422,6 +427,14 @@ than `--depth 1`).
 | `HOMEAPI_PORT` | `9999` | HTTP listen port |
 | `HOMEAPI_DB_PATH` | `~/.homeapi/homeapi.db` | Database file path |
 | `HOMEAPI_LOG_LEVEL` | `info` | Log level (debug, info, warn, error) |
+| `HOMEAPI_HOST` | every interface | Address to bind (`--host`), e.g. `127.0.0.1` for this machine only |
+| `HOMEAPI_DISCOVERY_PORT` | `9998` | UDP port that answers network discovery (`--discovery-port`); `0` turns it off, and a loopback bind never answers |
+| `HOMEAPI_NAME` | the hostname | Name announced to discovery |
+| `HOMEAPI_TZ` | unset | IANA zone to use as local time (the Android app sets it; elsewhere the system zone applies) |
+
+Resolved flag > variable > default in `internal/serve`; every default is the
+server's original behaviour, plus the discovery responder (`internal/discovery`).
+SIGTERM and Ctrl-C drain in-flight requests (5 s) and close the database.
 
 ### 6.3 Deployment
 1. Copy binary to target machine

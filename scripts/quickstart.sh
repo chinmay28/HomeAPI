@@ -254,7 +254,8 @@ else
     error "Service failed to start. Check: journalctl -u $SERVICE_NAME -e"
 fi
 
-VERSION="$(git -C "$SRC_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+VERSION="$("$BIN_PATH" --version 2>/dev/null | awk '{print $NF}')"
+[ -n "$VERSION" ] || VERSION="$(git -C "$SRC_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 echo ""
 if [ "$UPGRADE" = true ]; then
     info "Upgrade complete (now at $VERSION). No data loss; backups in $BACKUP_DIR."

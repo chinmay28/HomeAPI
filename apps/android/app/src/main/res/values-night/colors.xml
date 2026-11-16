@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- frontend/src/index.css, dark theme. -->
+    <color name="homeapi_bg">#FF18181B</color>
+    <color name="homeapi_surface">#FF232327</color>
+    <color name="homeapi_text">#FFF4F4F5</color>
+    <color name="homeapi_muted">#FFA1A1AA</color>
+    <color name="homeapi_border">#FF3F3F46</color>
+    <color name="homeapi_accent">#FF4ECDC4</color>
+</resources>

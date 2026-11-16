@@ -94,3 +94,40 @@ test('the browser chrome colour tracks the theme', async () => {
   const meta = document.querySelector('meta[name="theme-color"]:not([media])');
   expect(meta.getAttribute('content')).toBe('#18181b');
 });
+
+describe('inside the Android app', () => {
+  afterEach(() => {
+    delete window.homeapiApp;
+  });
+
+  test('a browser shows no app settings', () => {
+    render(<Settings />);
+
+    expect(screen.queryByRole('button', { name: 'App settings' })).not.toBeInTheDocument();
+  });
+
+  test('the app gets a button for its own settings', async () => {
+    const openSettings = jest.fn().mockResolvedValue({});
+    window.homeapiApp = { platform: 'android', mode: 'remote', openSettings };
+    render(<Settings />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'App settings' }));
+
+    expect(openSettings).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/which HomeAPI server this app opens/)).toBeInTheDocument();
+  });
+
+  test('says so when HomeAPI runs on the phone', () => {
+    window.homeapiApp = { platform: 'android', mode: 'on_phone', openSettings: jest.fn() };
+    render(<Settings />);
+
+    expect(screen.getByText(/running on this phone/)).toBeInTheDocument();
+  });
+
+  test('an object without openSettings is not the app', () => {
+    window.homeapiApp = { platform: 'android' };
+    render(<Settings />);
+
+    expect(screen.queryByRole('button', { name: 'App settings' })).not.toBeInTheDocument();
+  });
+});

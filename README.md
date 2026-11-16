@@ -4,6 +4,11 @@ A self-hosted REST API and web GUI for storing simple key-value text data. Compi
 
 **Use cases:** stock ticker watchlists, home automation configs, bookmarks, notes, and any simple text data that needs to be read/written by scripts or humans.
 
+**On Android:** [HomeAPI for Android](docs/ANDROID.md) opens your server — or
+runs the whole thing on the phone — and adds a home-screen widget. Install
+[`homeapi.apk`](https://github.com/chinmay28/homeapi/releases/latest/download/homeapi.apk)
+from the latest release.
+
 ## Quick Start (one line)
 
 Deploy HomeAPI as a `systemd` service with a single command. The **same**
@@ -67,7 +72,7 @@ A reference unit file is available at [`deploy/homeapi.service`](deploy/homeapi.
 ## Build From Source
 
 ```bash
-# Install prerequisites (Go, Node.js, GCC) if needed
+# Install prerequisites (Go, Node.js, make) if needed
 ./scripts/install-prereqs.sh
 
 # Build
@@ -93,6 +98,8 @@ make build
 - **Search** - full-text search across keys and values
 - **Import/Export** - backup and restore data as JSON
 - **SQLite storage** - reliable, single-file database
+- **Android app** - thin client or the whole server on the phone, with a
+  home-screen widget ([docs/ANDROID.md](docs/ANDROID.md))
 
 ## API Endpoints
 
@@ -161,14 +168,28 @@ curl -X POST http://localhost:9999/api/import \
 | `HOMEAPI_PORT` | `9999` | HTTP listen port |
 | `HOMEAPI_DB_PATH` | `~/.homeapi/homeapi.db` | SQLite database file path |
 | `HOMEAPI_LOG_LEVEL` | `info` | Log level (debug, info, warn, error) |
+| `HOMEAPI_HOST` | every interface | Address to bind (`--host`), e.g. `127.0.0.1` for this machine only |
+| `HOMEAPI_DISCOVERY_PORT` | `9998` | UDP port that answers network discovery (`--discovery-port`); `0` turns it off, and a loopback bind never answers |
+| `HOMEAPI_NAME` | the hostname | Name announced to discovery |
+| `HOMEAPI_TZ` | unset | IANA zone to use as local time (the Android app sets it; elsewhere the system zone applies) |
 
-The database directory and file are created automatically on first run.
+Flags (`--port`, `--host`, `--discovery-port`) override their variables. The
+database directory and file are created automatically on first run.
+
+**Discovery.** A server answers a UDP broadcast of `HOMEAPI-DISCOVER/1` on port
+9998 with a line of JSON — `{"service":"homeapi","name":…,"port":…,"version":…}`
+— so the Android app can list the servers on the network instead of having you
+type an address. It reveals nothing a port scan would not, answers only private,
+loopback, link-local and Tailscale addresses, and is off with
+`--discovery-port 0`. See [`internal/discovery`](internal/discovery/discovery.go).
 
 ## Build Requirements
 
 - **Go** 1.26 or later
 - **Node.js** 24+ (LTS) and npm (for frontend build)
-- **GCC** (required by the SQLite driver via CGO)
+- No C compiler: the SQLite driver is pure Go (`modernc.org/sqlite`) and the
+  binary is built with `CGO_ENABLED=0`, so it is static and cross-compiles
+  to any `GOOS`/`GOARCH` (the Android app's full-stack mode relies on this)
 
 Run `./scripts/install-prereqs.sh` to install all prerequisites automatically. Supports Ubuntu/Debian, Fedora, RHEL/CentOS, Arch Linux, and macOS (Homebrew).
 
@@ -200,14 +221,18 @@ leading numbers say *when* a release line opened, not what it promises about
 compatibility, and HomeAPI's compatibility promise is unconditional (see the
 backward-compatibility rules) rather than something a number could describe.
 
-`Year` and `Month` are bumped by hand in `internal/version/version.go` — not
-read from the build clock, so rebuilding an old tree still reports what it
-originally shipped. The month is not zero-padded (`v2026.8.311`, not
-`v2026.08.311`), because semver forbids a leading zero. The patch number is
-stamped in at build time by `make build`.
+Nobody bumps anything. The year and month are the month of the commit being
+built (its committer date, in the committer's own timezone), so the line moves
+the moment a commit lands in a new month, and a rebuild of an old commit still
+reports what it shipped as — never the build clock. The month is not
+zero-padded (`v2026.8.311`, not `v2026.08.311`), because semver forbids a
+leading zero. Both parts are stamped in at build time by `make build`
+(`node scripts/version.mjs --ldflags`); `make version` prints the version the
+tree builds as.
 
-The same number appears in the GUI header, in `./homeapi --version`, and in
-`GET /api/health`, because all three come from `scripts/version.mjs`.
+The same number appears in the GUI header, in `./homeapi --version`, in
+`GET /api/health` and in the Android app, because all of them come from
+`scripts/version.mjs`.
 
 A build made without git — a source tarball, or a `--depth 1` clone — reports
 patch `0` rather than guessing. Build releases from a full clone
@@ -223,6 +248,11 @@ internal/db/           SQLite database access layer
 internal/models/       Data models and validation
 internal/middleware/    HTTP middleware (CORS, logging)
 internal/version/      Application version (see "Versioning" below)
+internal/serve/        Flags/env → bind address, discovery, graceful stop
+internal/discovery/    UDP discovery responder ("Find on this network")
+internal/hostenv/      HOMEAPI_TZ → local time (for the Android app)
+cmd/homeapi-icons/     Derives the Android icons from frontend/public/icon.svg
+apps/android/          The Android app (see apps/android/README.md)
 frontend/src/          React application source
 scripts/version.mjs    Assembles the version for both builds
 docs/                  Design document and user guide
@@ -235,6 +265,8 @@ tests/e2e/             End-to-end tests (full workflow)
 - [Design Document](docs/DESIGN.md) - architecture, data model, API design
 - [User Guide](docs/USER_GUIDE.md) - detailed usage instructions and examples
 - [Minion 3 display](docs/MINION3_DISPLAY.md) - the e-paper dashboard frame: device contract, `minion-params` slots, layout
+- [Android app](docs/ANDROID.md) - installing and using HomeAPI on a phone; [how it is built](apps/android/README.md)
+- [Changelog](CHANGELOG.md) - release notes; a `## vX.Y.Z` section is what publishes a release
 
 ## License
 

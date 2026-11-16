@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { exportData, importData } from '../api';
 import Notification from '../components/Notification';
 import { useTheme } from '../theme';
+import { nativeApp } from '../nativeApp';
 
 const THEME_OPTIONS = [
   { id: 'system', label: 'System' },
@@ -53,6 +54,8 @@ function Settings() {
     }
   };
 
+  const app = nativeApp();
+
   return (
     <>
       <Notification notification={notification} onClear={() => setNotification(null)} />
@@ -80,6 +83,20 @@ function Settings() {
           ))}
         </div>
       </div>
+
+      {/* Only inside the Android app: its own settings (which server, or
+          HomeAPI on the phone) live outside this page. */}
+      {app && (
+        <div className="card">
+          <h2 className="card__title">This app</h2>
+          <p className="card__hint">
+            {app.mode === 'on_phone'
+              ? 'HomeAPI is running on this phone. Choose whether other devices can reach it, or switch to a server elsewhere.'
+              : 'Choose which HomeAPI server this app opens, or run HomeAPI on the phone itself.'}
+          </p>
+          <button type="button" className="btn" onClick={() => app.openSettings()}>App settings</button>
+        </div>
+      )}
 
       <div className="card">
         <h2 className="card__title">Export Data</h2>

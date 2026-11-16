@@ -23,3 +23,6 @@ Thumbs.db
 
 # Test
 coverage.out
+
+# Release binaries (make release)
+/dist/

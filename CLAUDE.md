@@ -15,9 +15,16 @@ Use cases: stock ticker watchlists, home automation configs, bookmarks, notes, a
 - **Lint**: `golangci-lint run ./...`
 - **Frontend lint**: `cd frontend && npm run lint`
 - **Frontend tests**: `cd frontend && npm test`
+- **Icons**: `make icons` (regenerate the Android icons from `frontend/public/icon.svg`), `make icons-check`
+- **Release binaries**: `make release` → `dist/homeapi-linux-{amd64,arm64}` (static, frontend embedded)
+- **Android app**: `cd apps/android && ./gradlew --no-daemon :core:test :app:lintDebug :app:assembleRelease`
+  (`-PcoreOnly :core:test` needs no Android SDK; `-PappServer=false` builds a thin client without Go)
 
 ## Architecture
-- **Backend**: Go with `net/http` standard library, SQLite via `modernc.org/sqlite` (pure Go, no CGO)
+- **Backend**: Go with `net/http` standard library, SQLite via `modernc.org/sqlite` (pure Go, no CGO).
+  Every build is `CGO_ENABLED=0`; keep it that way — the Android app runs the same static binary.
+  The driver's DSN options (`driverOptions` in `internal/db/db.go`) make timestamps read and write
+  exactly as the old `mattn/go-sqlite3` build did; `internal/db/testdata/mattn-go-sqlite3.db` pins it.
 - **Frontend**: React (Create React App), embedded into Go binary via `embed.FS`
 - **Database**: SQLite, stored at `~/.homeapi/homeapi.db` by default (configurable via `HOMEAPI_DB_PATH`)
 - **Single binary**: Frontend is built and embedded at compile time
@@ -30,7 +37,11 @@ internal/db/         - Database access layer
 internal/models/     - Data models
 internal/middleware/  - HTTP middleware (CORS, logging, auth)
 internal/display/    - Minion 3 e-paper frame renderer: pure, deterministic, golden-tested (docs/MINION3_DISPLAY.md)
-internal/version/    - Application version (Year/Month constants, stamped Patch)
+internal/version/    - Application version (stamped Date + Patch, from the commit)
+internal/serve/      - Flags/env → bind address, discovery, graceful SIGTERM shutdown
+internal/discovery/  - UDP discovery responder (HOMEAPI-DISCOVER/1 on 9998), mirrored by the app
+internal/hostenv/    - HOMEAPI_TZ → time.Local (Go on Android starts in UTC); inert when unset
+apps/android/        - The Android app: thin client or the same binary on the phone (apps/android/README.md)
 frontend/            - React application
 scripts/version.mjs  - Assembles the version for the Go and web builds
 docs/                - Design document and user guide
@@ -90,16 +101,47 @@ and `at=` renders are read-only.
 
 ## Versioning
 `vYEAR.MONTH.PATCH` — a calendar version, where PATCH is the repository's commit
-count, so every commit is a patch release. Year/month are Go source constants in
-`internal/version/version.go` (bump by hand when a release line opens, never
-from the build clock); the patch number is stamped at build time. The month is
-not zero-padded, which keeps the string valid semver. `scripts/version.mjs` is the one place it is assembled, and both the
-Go binary (`-ldflags -X`) and the web bundle (`REACT_APP_VERSION`) read from it,
-so the GUI header, `--version`, and `/api/health` always agree. A build without
-git reports patch `0`.
+count, so every commit is a patch release. YEAR.MONTH is the month of HEAD's
+**committer date, in the committer's own timezone** — there are no constants to
+bump, and it is never the build clock (only an unstamped `go build`, which has
+no commit to ask, falls back to the build month under patch 0). The month is
+not zero-padded, which keeps the string valid semver. `scripts/version.mjs` is
+the one place it is assembled: `--ldflags` prints the `-X …version.Patch/Date`
+flags every Go build is stamped with (Makefile, the release workflow, the
+Android app's server build), the web bundle reads it as `REACT_APP_VERSION`,
+and the APK takes it as `-PappVersionName` / `-PappVersionCode`, so the GUI
+header, `--version`, `/api/health` and the app always agree. A build without
+git, or a shallow clone, reports patch `0`; anything building a release needs
+the full commit graph (`fetch-depth: 0`). Don't assert a literal version in a
+test — it changes with every commit.
+
+Releases: `.github/workflows/release.yml` runs on `v*` tags, pushes to `main`
+and manual dispatch. The gate is a `## vX.Y.Z` section in `CHANGELOG.md` that
+matches the commit's version (a push without one is skipped, a tag or dispatch
+without one fails); it publishes `homeapi-linux-amd64`, `homeapi-linux-arm64`
+(static, frontend embedded), `homeapi.apk` and `SHA256SUMS`. Keep those asset
+names — `releases/latest/download/homeapi.apk` is linked from the docs.
 
 The application version is *not* the export/import format version — that is a
 separate `version` field and stays at `"1"`.
+
+## Android app
+`apps/android` (see `apps/android/README.md`, user guide `docs/ANDROID.md`) is
+HomeAPI's web GUI in a web view, against a remote server or the same `homeapi`
+binary run on the phone (`CGO_ENABLED=0 GOOS=linux GOARCH=arm64 -tags
+timetzdata`, packaged as `libhomeapi.so`). Every decision it makes lives in
+`:core` with a JUnit test; `:app` is glue. Rules:
+- The server flags/env it uses (`--host`, `--discovery-port`, `HOMEAPI_TZ`,
+  `HOMEAPI_NAME`, `HOMEAPI_DB_PATH`) are ordinary documented settings, inert
+  when unset; keep server changes for the app additive like that.
+- `internal/discovery`'s `DefaultPort`/`Query`/`Service` are mirrored in
+  `core/DiscoveryProtocol.kt`, whose test reads them out of the Go source.
+- Web hooks for the app feature-detect `window.homeapiApp`
+  (`frontend/src/nativeApp.js`) and change nothing in a plain browser.
+- Icons are generated (`make icons`); never hand-edit a `mipmap-*` PNG,
+  `ic_launcher.xml` or `ic_launcher_background.xml`. `ic_stat_homeapi.xml` and
+  `ic_launcher_monochrome.xml` are hand-drawn silhouettes of the SVG.
+- Use `--no-daemon --max-workers=2` on shared build machines.
 
 ## Code Style
 - Go: standard `gofmt` formatting, error wrapping with `fmt.Errorf("context: %w", err)`
