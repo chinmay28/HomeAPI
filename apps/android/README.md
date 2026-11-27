@@ -167,3 +167,10 @@ Version: `-PappVersionName`, `-PappVersionCode` (the commit count) and
 them; without them the app is `dev`. The release build is signed with the debug
 key so it sideloads as it stands. CI is `.github/workflows/android.yml`; the
 release attaches the APK as `homeapi.apk`.
+
+## Signing
+
+Releases are signed with one fixed key, read from the `ANDROID_KEYSTORE_BASE64`
+and `ANDROID_KEYSTORE_PASSWORD` repository secrets (a PKCS12 keystore, alias
+`harbor`, shared by every Harbor app), so each release installs over the last.
+A build without them, any local build included, falls back to the debug key.
